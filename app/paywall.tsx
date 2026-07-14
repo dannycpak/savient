@@ -4,7 +4,7 @@ import { router } from "expo-router";
 import type { PurchasesPackage } from "react-native-purchases";
 import { getOfferings, purchase, restore } from "@/lib/purchases";
 import { Screen, Card, Button, Eyebrow } from "@/components/ui";
-import { COPY } from "@/constants/copy";
+import { COPY, IAP } from "@/constants/copy";
 import { space, type } from "@/constants/theme";
 
 export default function Paywall() {
@@ -42,8 +42,21 @@ export default function Paywall() {
     }
   };
 
-  const plusPkg = pkgs.find((p) => p.identifier.includes("plus") || p.packageType === "MONTHLY");
-  const creditPkgs = pkgs.filter((p) => p !== plusPkg);
+  const plusPkg = pkgs.find(
+    (p) =>
+      p.product.identifier === IAP.plusMonthly ||
+      p.identifier === "$rc_monthly" ||
+      p.packageType === "MONTHLY",
+  );
+  const creditPkgs = pkgs.filter(
+    (p) =>
+      p !== plusPkg &&
+      [IAP.credits5, IAP.credits15, IAP.credits40].includes(
+        p.product.identifier as typeof IAP.credits5,
+      ),
+  );
+  const otherCredits = pkgs.filter((p) => p !== plusPkg && !creditPkgs.includes(p));
+  const credits = creditPkgs.length > 0 ? creditPkgs : otherCredits;
 
   return (
     <Screen style={{ padding: 0 }}>
@@ -60,15 +73,22 @@ export default function Paywall() {
 
         <Button
           label={plusPkg ? `Start free month — ${plusPkg.product.priceString}` : "Start free month"}
-          onPress={() => (plusPkg ? buy(plusPkg) : Alert.alert("Offerings not loaded", "Configure RevenueCat products first."))}
+          onPress={() =>
+            plusPkg
+              ? buy(plusPkg)
+              : Alert.alert(
+                  "Offerings not loaded",
+                  `Configure RevenueCat product ${IAP.plusMonthly} (see docs/IAP_PRODUCTS.md).`,
+                )
+          }
           loading={busy}
         />
         <Button label="Maybe later" variant="ghost" onPress={() => router.back()} />
 
-        {creditPkgs.length > 0 && (
+        {credits.length > 0 && (
           <View style={{ gap: space.sm, marginTop: space.md }}>
             <Text style={type.h2}>Visual Check credit packs</Text>
-            {creditPkgs.map((p) => (
+            {credits.map((p) => (
               <Button
                 key={p.identifier}
                 label={`${p.product.title} — ${p.product.priceString}`}

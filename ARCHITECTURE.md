@@ -11,23 +11,33 @@ money-touching logic. Three isolated billing rails (see `.cursorrules` → Billi
 ├── ARCHITECTURE.md                  # This file
 ├── TODO.md                          # Phased build checklist — build in this order
 ├── docs/
+│   ├── PRODUCT_SPEC.md              # Screen inventory + business model summary
 │   ├── BACKEND_SPEC.md              # Data model, billing rails, API surface, security
-│   └── PRODUCT_SPEC.md              # Screen inventory + business model summary
+│   ├── STORE_SETUP.md               # Vendor console checklist (Supabase / RC / Stripe)
+│   ├── IAP_PRODUCTS.md              # App Store / Play / RevenueCat product IDs
+│   ├── LEGAL_DISCLAIMER.md          # Approved Visual Check second-opinion copy
+│   ├── APP_REVIEW.md                # Demo account, IAP notes, privacy labels
+│   └── RECONCILIATION.md            # Cron reconcile Edge Function ops guide
+├── config/
+│   └── iap-products.json            # Canonical Sage+ + credit pack product catalog
 ├── app.json                         # Expo config (bundle IDs, plugins, deep-link scheme)
 ├── package.json / tsconfig.json
 ├── .env.example                     # EXPO_PUBLIC_* client env vars
 ├── scripts/
 │   └── setup.sh                     # One-shot local bootstrap (supabase init, secrets, deps)
 ├── supabase/
-│   ├── migrations/
-│   │   └── 0001_initial_schema.sql  # Full schema + RLS + triggers
+│   ├── migrations/                  # 0001 schema+RLS … 0007 billing/storage hardening
+│   ├── seed/demo_reviewer.sql       # App Store review account helper
 │   └── functions/                   # Deno Edge Functions
 │       ├── _shared/cors.ts
 │       ├── visual-check/index.ts        # AI proxy; consumes allowance → credits
 │       ├── revenuecat-webhook/index.ts  # Entitlement + consumable events (digital goods)
 │       ├── stripe-webhook/index.ts      # Connect account + payment events (physical goods)
 │       ├── create-order/index.ts        # PaymentIntent (manual capture) for a listing
-│       └── confirm-delivery/index.ts    # Capture + transfer to seller (escrow release)
+│       ├── confirm-delivery/index.ts    # Capture + transfer to seller (escrow release)
+│       ├── create-connect-account/index.ts  # Stripe Connect Express onboarding link
+│       ├── add-tracking/index.ts        # Seller ships → order status shipped
+│       └── reconcile/index.ts           # Cron: credit audit, stuck webhooks, auto-confirm
 ├── lib/
 │   ├── supabase.ts                  # Client singleton + typed helpers
 │   ├── api.ts                       # Edge Function fetch wrapper (bearer token)

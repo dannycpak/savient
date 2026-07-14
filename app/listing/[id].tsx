@@ -2,6 +2,7 @@ import { useCallback, useState } from "react";
 import { ScrollView, Text, View } from "react-native";
 import { useLocalSearchParams, useFocusEffect, router } from "expo-router";
 import { supabase } from "@/lib/supabase";
+import { SellerBadge } from "@/components/SellerBadge";
 import { Screen, Card, Button, Eyebrow } from "@/components/ui";
 import { space, type } from "@/constants/theme";
 
@@ -59,9 +60,10 @@ export default function ListingDetail() {
         <Card>
           <Eyebrow>Seller</Eyebrow>
           <Text style={type.h2}>{row.sellers?.business_name ?? "Seller"}</Text>
-          <Text style={type.caption}>
-            {(row.sellers?.credibility_score ?? 0).toFixed(1)}/10 · {row.sellers?.tier ?? "—"}
-          </Text>
+          <SellerBadge
+            score={row.sellers?.credibility_score}
+            tier={row.sellers?.tier}
+          />
           <Button
             label="View seller"
             variant="ghost"

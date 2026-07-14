@@ -1,7 +1,9 @@
 import { useState } from "react";
-import { Alert, Text, View } from "react-native";
+import { Alert, Platform, Text, View } from "react-native";
 import { Link, router } from "expo-router";
+import * as AppleAuthentication from "expo-apple-authentication";
 import { supabase } from "@/lib/supabase";
+import { signInWithApple, signInWithGoogle } from "@/lib/oauth";
 import { Screen, Button, Field } from "@/components/ui";
 import { space, type, colors } from "@/constants/theme";
 
@@ -26,6 +28,32 @@ export default function Signup() {
     }
   };
 
+  const apple = async () => {
+    setBusy(true);
+    try {
+      await signInWithApple();
+      router.replace("/(tabs)");
+    } catch (e) {
+      if ((e as { code?: string })?.code !== "ERR_REQUEST_CANCELED") {
+        Alert.alert("Apple sign-in failed", e instanceof Error ? e.message : "Try again");
+      }
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const google = async () => {
+    setBusy(true);
+    try {
+      await signInWithGoogle();
+      router.replace("/(tabs)");
+    } catch (e) {
+      Alert.alert("Google sign-in failed", e instanceof Error ? e.message : "Try again");
+    } finally {
+      setBusy(false);
+    }
+  };
+
   return (
     <Screen style={{ justifyContent: "center", gap: space.lg }}>
       <View style={{ gap: space.sm }}>
@@ -36,6 +64,20 @@ export default function Signup() {
       <Field label="Email" value={email} onChangeText={setEmail} keyboardType="email-address" />
       <Field label="Password" value={password} onChangeText={setPassword} secureTextEntry />
       <Button label="Sign up" onPress={submit} loading={busy} />
+
+      <View style={{ gap: space.sm }}>
+        {Platform.OS === "ios" && (
+          <AppleAuthentication.AppleAuthenticationButton
+            buttonType={AppleAuthentication.AppleAuthenticationButtonType.SIGN_UP}
+            buttonStyle={AppleAuthentication.AppleAuthenticationButtonStyle.BLACK}
+            cornerRadius={10}
+            style={{ width: "100%", height: 48 }}
+            onPress={apple}
+          />
+        )}
+        <Button label="Continue with Google" variant="ghost" onPress={google} disabled={busy} />
+      </View>
+
       <Link href="/(auth)/login" style={{ color: colors.muted }}>
         Already have an account? Sign in
       </Link>

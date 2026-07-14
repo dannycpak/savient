@@ -39,8 +39,25 @@ Expo Router app shell in the approved design language.
 - Play: Data safety form — photos processed, no location retained (EXIF stripped client-side).
 - Deep-link scheme `sage://` handles password reset and Stripe Connect onboarding returns.
 
+Follow **`docs/STORE_SETUP.md`** for vendor consoles, **`docs/IAP_PRODUCTS.md`** +
+`config/iap-products.json` for product IDs, **`docs/APP_REVIEW.md`** for reviewer notes,
+and **`docs/LEGAL_DISCLAIMER.md`** for Visual Check copy (wired via `constants/copy.ts`).
+
+## Docs map
+
+| Doc | Purpose |
+|---|---|
+| `docs/PRODUCT_SPEC.md` | Screens, monetization, design language |
+| `docs/BACKEND_SPEC.md` | Schema, billing rails, API/security |
+| `docs/STORE_SETUP.md` | Supabase / RevenueCat / Stripe console steps |
+| `docs/IAP_PRODUCTS.md` | Sage+ + credit pack IDs and RC offerings |
+| `docs/LEGAL_DISCLAIMER.md` | Approved second-opinion disclaimer |
+| `docs/APP_REVIEW.md` | Demo account, IAP notes, privacy |
+| `docs/RECONCILIATION.md` | Hourly `reconcile` job |
+| `TODO.md` | Phased build checklist |
+
 ## Layout
 
 See `ARCHITECTURE.md` for the full tree. Quick map: `app/` screens · `lib/` supabase/api/
 purchases/images gateways · `supabase/migrations/` schema+RLS · `supabase/functions/` Deno
-edge functions · `docs/` product + backend specs · `TODO.md` build order.
+edge functions · `docs/` product + store/legal/ops guides · `TODO.md` build order.
