@@ -1,0 +1,57 @@
+{
+  "entitlement": "plus",
+  "offering_id": "default",
+  "subscription": {
+    "product_id": "sage_plus_monthly",
+    "entitlement": "plus",
+    "price_usd": 7.0,
+    "billing_period": "P1M",
+    "intro_offer": {
+      "type": "free_trial",
+      "duration": "P1M"
+    },
+    "display_name": "Sage+",
+    "description": "Unlimited Visual Checks, unlimited cataloging, collection valuation analytics."
+  },
+  "credit_packs": [
+    {
+      "product_id": "sage_credits_5",
+      "credits": 5,
+      "price_usd": 2.99,
+      "type": "consumable",
+      "display_name": "5 Visual Checks"
+    },
+    {
+      "product_id": "sage_credits_15",
+      "credits": 15,
+      "price_usd": 6.99,
+      "type": "consumable",
+      "display_name": "15 Visual Checks"
+    },
+    {
+      "product_id": "sage_credits_40",
+      "credits": 40,
+      "price_usd": 14.99,
+      "type": "consumable",
+      "display_name": "40 Visual Checks"
+    }
+  ],
+  "app_store": {
+    "bundle_id": "com.jbstratis.sage",
+    "subscription_group": "Sage Plus"
+  },
+  "play": {
+    "package_name": "com.jbstratis.sage",
+    "base_plan_id": "monthly"
+  },
+  "revenuecat": {
+    "entitlement_id": "plus",
+    "offering_identifier": "default",
+    "packages": [
+      { "identifier": "$rc_monthly", "product_id": "sage_plus_monthly" },
+      { "identifier": "credits_5", "product_id": "sage_credits_5" },
+      { "identifier": "credits_15", "product_id": "sage_credits_15" },
+      { "identifier": "credits_40", "product_id": "sage_credits_40" }
+    ]
+  }
+}

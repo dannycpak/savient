@@ -1,5 +1,11 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
-import { corsHeaders, json } from "../_shared/cors.ts";
+import { corsHeaders, json, logWebhookEvent, markWebhookRow } from "../_shared/cors.ts";
+
+const CREDIT_PRODUCTS: Record<string, number> = {
+  sage_credits_5: 5,
+  sage_credits_15: 15,
+  sage_credits_40: 40,
+};
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
@@ -19,12 +25,18 @@ Deno.serve(async (req) => {
   const event = payload.event ?? payload;
   const type = event.type as string;
   const appUserId = event.app_user_id as string;
-  if (!appUserId) return json({ error: "missing app_user_id" }, 400);
+  const eventId = String(event.id ?? event.transaction_id ?? `${type}-${Date.now()}`);
+  const rowId = await logWebhookEvent(admin, "revenuecat", type, payload, eventId);
+
+  if (!appUserId) {
+    await markWebhookRow(admin, rowId, false, "missing app_user_id");
+    return json({ error: "missing app_user_id" }, 400);
+  }
 
   try {
     if (["INITIAL_PURCHASE", "RENEWAL"].includes(type)) {
-      const entitlement = event.entitlement_ids?.[0] ?? "plus";
-      if (entitlement === "plus" || (event.entitlement_ids ?? []).includes("plus")) {
+      const ids: string[] = event.entitlement_ids ?? [];
+      if (ids.includes("plus") || event.product_id === "sage_plus_monthly") {
         await admin.from("profiles").update({ plan: "plus" }).eq("id", appUserId);
         await admin.from("subscriptions").upsert({
           user_id: appUserId,
@@ -34,7 +46,12 @@ Deno.serve(async (req) => {
           renews_at: event.expiration_at_ms
             ? new Date(event.expiration_at_ms).toISOString()
             : null,
-          store: event.store === "APP_STORE" ? "app_store" : event.store === "PLAY_STORE" ? "play" : null,
+          store:
+            event.store === "APP_STORE"
+              ? "app_store"
+              : event.store === "PLAY_STORE"
+                ? "play"
+                : null,
           updated_at: new Date().toISOString(),
         });
       }
@@ -53,12 +70,15 @@ Deno.serve(async (req) => {
 
     if (type === "NON_RENEWING_PURCHASE") {
       const productId = (event.product_id as string) ?? "";
-      let credits = 0;
-      if (productId.includes("5") || productId.includes("credits_5")) credits = 5;
-      else if (productId.includes("15") || productId.includes("credits_15")) credits = 15;
-      else if (productId.includes("40") || productId.includes("credits_40")) credits = 40;
-      else credits = Number(event.purchased_quantity ?? 0) || 0;
-
+      const credits =
+        CREDIT_PRODUCTS[productId] ??
+        (productId.includes("credits_40")
+          ? 40
+          : productId.includes("credits_15")
+            ? 15
+            : productId.includes("credits_5")
+              ? 5
+              : 0);
       const tx = event.transaction_id as string | undefined;
       if (credits > 0) {
         await admin.from("credit_ledger").upsert(
@@ -66,16 +86,18 @@ Deno.serve(async (req) => {
             user_id: appUserId,
             delta: credits,
             reason: "purchase",
-            rc_transaction_id: tx ?? `${appUserId}-${event.id ?? Date.now()}`,
+            rc_transaction_id: tx ?? `${appUserId}-${eventId}`,
           },
           { onConflict: "rc_transaction_id", ignoreDuplicates: true },
         );
       }
     }
 
-    // BILLING_ISSUE: leave plan; visual-check can soft-pause separately if needed
+    await markWebhookRow(admin, rowId, true);
     return json({ ok: true });
   } catch (e) {
-    return json({ error: e instanceof Error ? e.message : "error" }, 500);
+    const msg = e instanceof Error ? e.message : "error";
+    await markWebhookRow(admin, rowId, false, msg);
+    return json({ error: msg }, 500);
   }
 });

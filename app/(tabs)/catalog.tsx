@@ -1,36 +1,85 @@
-// My collection — list + add; free tier capped at 25 specimens (server enforces too).
-import { useCallback, useState } from "react";
-import { Alert, FlatList, Pressable, Text, View } from "react-native";
+import { useCallback, useMemo, useState } from "react";
+import { Alert, FlatList, Text, View } from "react-native";
 import { router, useFocusEffect } from "expo-router";
 import { supabase } from "@/lib/supabase";
-import { Screen, Card, Button } from "@/components/ui";
+import { signedPhotoUrl } from "@/lib/photos";
+import { Screen, Button, Card } from "@/components/ui";
+import { SpecimenCard, type SpecimenListItem } from "@/components/SpecimenCard";
+import { CapacityMeter, SearchField, SegmentedControl } from "@/components/InventoryControls";
 import { FREE_TIER, COPY } from "@/constants/copy";
+import { formatMoney } from "@/lib/format";
 import { space, type } from "@/constants/theme";
 
-type Row = {
-  id: string;
-  species: string;
-  locality: string | null;
-  est_value_cents: number | null;
-};
+type SortKey = "newest" | "value" | "alpha";
+type Layout = "list" | "grid";
 
 export default function Catalog() {
-  const [rows, setRows] = useState<Row[]>([]);
+  const [rows, setRows] = useState<SpecimenListItem[]>([]);
   const [plan, setPlan] = useState<"free" | "plus">("free");
+  const [query, setQuery] = useState("");
+  const [sort, setSort] = useState<SortKey>("newest");
+  const [layout, setLayout] = useState<Layout>("list");
 
   useFocusEffect(
     useCallback(() => {
       (async () => {
         const { data } = await supabase
           .from("specimens")
-          .select("id, species, locality, est_value_cents")
+          .select("id, species, variety, locality, est_value_cents, rarity, created_at")
           .order("created_at", { ascending: false });
-        setRows((data as Row[]) ?? []);
+        const base = (data as SpecimenListItem[]) ?? [];
+
+        const withThumbs: SpecimenListItem[] = [];
+        for (const row of base) {
+          const { data: ph } = await supabase
+            .from("specimen_photos")
+            .select("storage_path")
+            .eq("specimen_id", row.id)
+            .order("is_primary", { ascending: false })
+            .limit(1)
+            .maybeSingle();
+          let thumbUrl: string | null = null;
+          if (ph?.storage_path) {
+            try {
+              thumbUrl = await signedPhotoUrl(ph.storage_path);
+            } catch {
+              thumbUrl = null;
+            }
+          }
+          withThumbs.push({ ...row, thumbUrl });
+        }
+        setRows(withThumbs);
+
         const { data: prof } = await supabase.from("profiles").select("plan").single();
         if (prof) setPlan(prof.plan as "free" | "plus");
       })();
     }, []),
   );
+
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    let list = rows;
+    if (q) {
+      list = list.filter(
+        (r) =>
+          r.species.toLowerCase().includes(q) ||
+          (r.locality ?? "").toLowerCase().includes(q) ||
+          (r.variety ?? "").toLowerCase().includes(q) ||
+          (r.rarity ?? "").toLowerCase().includes(q),
+      );
+    }
+    const sorted = [...list];
+    if (sort === "value") {
+      sorted.sort((a, b) => (b.est_value_cents ?? -1) - (a.est_value_cents ?? -1));
+    } else if (sort === "alpha") {
+      sorted.sort((a, b) => a.species.localeCompare(b.species));
+    } else {
+      sorted.sort((a, b) => (b.created_at ?? "").localeCompare(a.created_at ?? ""));
+    }
+    return sorted;
+  }, [rows, query, sort]);
+
+  const totalValue = rows.reduce((s, r) => s + (r.est_value_cents ?? 0), 0);
 
   const add = () => {
     if (plan === "free" && rows.length >= FREE_TIER.catalogCap) {
@@ -49,30 +98,74 @@ export default function Catalog() {
 
   return (
     <Screen style={{ gap: space.md, paddingBottom: 0 }}>
-      <Button label="Add specimen" onPress={add} />
+      <View style={{ gap: space.sm }}>
+        <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "baseline" }}>
+          <Text style={type.h1}>My collection</Text>
+          <Text style={type.caption}>{formatMoney(totalValue)}</Text>
+        </View>
+        <CapacityMeter
+          used={rows.length}
+          cap={plan === "plus" ? null : FREE_TIER.catalogCap}
+          label="Catalog capacity"
+        />
+        <SearchField
+          value={query}
+          onChangeText={setQuery}
+          placeholder="Search species, locality, rarity…"
+        />
+        <SegmentedControl
+          value={sort}
+          onChange={setSort}
+          options={[
+            { value: "newest", label: "Newest" },
+            { value: "value", label: "Value" },
+            { value: "alpha", label: "A–Z" },
+          ]}
+        />
+        <SegmentedControl
+          value={layout}
+          onChange={setLayout}
+          options={[
+            { value: "list", label: "List" },
+            { value: "grid", label: "Grid" },
+          ]}
+        />
+        <View style={{ flexDirection: "row", gap: space.sm }}>
+          <View style={{ flex: 1 }}>
+            <Button label="Add specimen" onPress={add} />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Button
+              label="Analytics"
+              variant="ghost"
+              onPress={() => router.push("/inventory/analytics")}
+            />
+          </View>
+        </View>
+      </View>
+
       <FlatList
-        data={rows}
+        key={layout}
+        data={filtered}
         keyExtractor={(r) => r.id}
+        numColumns={layout === "grid" ? 2 : 1}
+        columnWrapperStyle={layout === "grid" ? { gap: space.sm } : undefined}
         contentContainerStyle={{ gap: space.sm, paddingBottom: space.xl }}
         ListEmptyComponent={
           <Card>
-            <Text style={type.body}>{COPY.emptyCatalog}</Text>
+            <Text style={type.body}>
+              {query ? "No specimens match your search." : COPY.emptyCatalog}
+            </Text>
           </Card>
         }
         renderItem={({ item }) => (
-          <Pressable onPress={() => router.push(`/specimen/${item.id}`)}>
-            <Card>
-              <Text style={type.h2}>{item.species}</Text>
-              <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
-                <Text style={type.caption}>{item.locality ?? "Locality unknown"}</Text>
-                <Text style={type.caption}>
-                  {item.est_value_cents != null
-                    ? `$${(item.est_value_cents / 100).toLocaleString()}`
-                    : ""}
-                </Text>
-              </View>
-            </Card>
-          </Pressable>
+          <View style={layout === "grid" ? { flex: 1 } : undefined}>
+            <SpecimenCard
+              item={item}
+              compact={layout === "list"}
+              onPress={() => router.push(`/specimen/${item.id}`)}
+            />
+          </View>
         )}
       />
     </Screen>

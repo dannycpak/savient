@@ -40,6 +40,27 @@ Deno.serve(async (req) => {
       return json({ error: "Invalid path" }, 403);
     }
 
+    // Rate limit: max 6 checks / minute
+    const { data: recentCount } = await admin.rpc("recent_check_count", {
+      p_user_id: userId,
+      p_seconds: 60,
+    });
+    if (typeof recentCount === "number" && recentCount >= 6) {
+      return json({ error: "Too many checks — wait a moment" }, 429);
+    }
+
+    // Validate object exists + size/mime via storage metadata
+    const { data: objMeta, error: metaErr } = await admin.storage
+      .from("check-uploads")
+      .list(userId, { search: image_path.split("/").pop() });
+    if (metaErr) return json({ error: "Image not found" }, 404);
+    const meta = objMeta?.find((o) => `${userId}/${o.name}` === image_path);
+    if (!meta) return json({ error: "Image not found" }, 404);
+    const mime = (meta.metadata as { mimetype?: string } | null)?.mimetype ?? "";
+    if (mime && !mime.startsWith("image/")) {
+      return json({ error: "Invalid image type" }, 400);
+    }
+
     // Quota gate
     const { data: consumed, error: consumeErr } = await admin.rpc("consume_check", {
       p_user_id: userId,
@@ -70,7 +91,16 @@ Deno.serve(async (req) => {
     if (insertErr) return json({ error: insertErr.message }, 500);
 
     const anthropicKey = Deno.env.get("ANTHROPIC_API_KEY");
-    if (!anthropicKey) return json({ error: "AI not configured" }, 500);
+    if (!anthropicKey) {
+      await admin
+        .from("visual_checks")
+        .update({ status: "failed", completed_at: new Date().toISOString() })
+        .eq("id", checkRow.id);
+      if (typeof consumed === "string") {
+        await admin.rpc("refund_check", { p_user_id: userId, p_consumed: consumed });
+      }
+      return json({ error: "AI not configured" }, 500);
+    }
 
     const imgRes = await fetch(signed.signedUrl);
     const buf = new Uint8Array(await imgRes.arrayBuffer());
@@ -112,6 +142,10 @@ Deno.serve(async (req) => {
         .from("visual_checks")
         .update({ status: "failed", completed_at: new Date().toISOString() })
         .eq("id", checkRow.id);
+      // Refund quota/credit consumed before the failed AI call
+      if (typeof consumed === "string") {
+        await admin.rpc("refund_check", { p_user_id: userId, p_consumed: consumed });
+      }
       return json({ error: "Vision model failed" }, 502);
     }
 

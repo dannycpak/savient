@@ -43,6 +43,17 @@ Deno.serve(async (req) => {
       return json({ error: "Seller not ready for payouts" }, 400);
     }
 
+    // Block duplicate open orders for this listing
+    const { data: existing } = await admin
+      .from("orders")
+      .select("id")
+      .eq("listing_id", listing_id)
+      .in("status", ["pending", "escrow_held", "shipped", "delivered"])
+      .limit(1);
+    if (existing && existing.length > 0) {
+      return json({ error: "Listing already has an active order" }, 409);
+    }
+
     const amount = listing.price_cents as number;
     const fee = Math.round((amount * PLATFORM_FEE_BPS) / 10000);
     const orderId = crypto.randomUUID();
