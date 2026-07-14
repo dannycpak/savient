@@ -35,9 +35,14 @@ export default function RootLayout() {
         <Stack.Screen name="(auth)" options={{ headerShown: false }} />
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen name="auth/callback" options={{ headerShown: false }} />
+        <Stack.Screen name="auth/reset-password" options={{ title: "Reset password" }} />
         <Stack.Screen name="paywall" options={{ presentation: "modal", title: "Sage+" }} />
         <Stack.Screen name="specimen/[id]" options={{ title: "Specimen" }} />
         <Stack.Screen name="specimen/new" options={{ title: "Add specimen" }} />
+        <Stack.Screen name="specimen/edit/[id]" options={{ title: "Edit specimen" }} />
+        <Stack.Screen name="check/history" options={{ title: "Check history" }} />
+        <Stack.Screen name="check/[id]" options={{ title: "Check detail" }} />
+        <Stack.Screen name="inventory/analytics" options={{ title: "Analytics" }} />
         <Stack.Screen name="listing/[id]" options={{ title: "Listing" }} />
         <Stack.Screen name="listing/new" options={{ title: "New listing" }} />
         <Stack.Screen name="seller/[id]" options={{ title: "Seller" }} />
