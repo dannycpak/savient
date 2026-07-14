@@ -1,8 +1,8 @@
 import { useEffect } from "react";
 import { ActivityIndicator, View } from "react-native";
 import { router } from "expo-router";
-import * as SecureStore from "expo-secure-store";
 import { useAuth } from "@/lib/auth";
+import { appStorage } from "@/lib/storage";
 import { colors } from "@/constants/theme";
 
 const ONBOARDING_KEY = "sage.onboarding.done";
@@ -13,7 +13,7 @@ export default function Index() {
   useEffect(() => {
     if (loading) return;
     (async () => {
-      const done = await SecureStore.getItemAsync(ONBOARDING_KEY).catch(() => null);
+      const done = await appStorage.getItem(ONBOARDING_KEY).catch(() => null);
       if (!done) {
         router.replace("/onboarding");
         return;
