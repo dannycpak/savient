@@ -1,10 +1,12 @@
 import { useLocalSearchParams, router } from "expo-router";
 import { useState } from "react";
-import { Alert, ScrollView, Text, View } from "react-native";
+import { Alert, Image, Pressable, ScrollView, Text } from "react-native";
+import * as ImagePicker from "expo-image-picker";
 import { supabase } from "@/lib/supabase";
+import { uploadSpecimenPhoto } from "@/lib/photos";
 import { Screen, Button, Field, Card } from "@/components/ui";
 import { FREE_TIER } from "@/constants/copy";
-import { space, type } from "@/constants/theme";
+import { radius, space, type } from "@/constants/theme";
 
 export default function NewSpecimen() {
   const { species: preset } = useLocalSearchParams<{ species?: string }>();
@@ -12,7 +14,13 @@ export default function NewSpecimen() {
   const [locality, setLocality] = useState("");
   const [provenance, setProvenance] = useState("");
   const [value, setValue] = useState("");
+  const [photoUri, setPhotoUri] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+
+  const pick = async () => {
+    const res = await ImagePicker.launchImageLibraryAsync({ quality: 1 });
+    if (!res.canceled) setPhotoUri(res.assets[0].uri);
+  };
 
   const save = async () => {
     if (!species.trim()) {
@@ -50,6 +58,10 @@ export default function NewSpecimen() {
         .select("id")
         .single();
       if (error) throw error;
+
+      if (photoUri) {
+        await uploadSpecimenPhoto(photoUri, data.id);
+      }
       router.replace(`/specimen/${data.id}`);
     } catch (e) {
       Alert.alert("Could not save", e instanceof Error ? e.message : "Try again");
@@ -62,6 +74,19 @@ export default function NewSpecimen() {
     <Screen style={{ padding: 0 }}>
       <ScrollView contentContainerStyle={{ padding: space.lg, gap: space.md }}>
         <Text style={type.h1}>Add specimen</Text>
+        <Pressable onPress={pick}>
+          {photoUri ? (
+            <Image
+              source={{ uri: photoUri }}
+              style={{ width: "100%", height: 200, borderRadius: radius.lg }}
+            />
+          ) : (
+            <Card style={{ height: 160, alignItems: "center", justifyContent: "center" }}>
+              <Text style={type.h2}>Tap to add a photo</Text>
+              <Text style={type.caption}>EXIF/GPS stripped before upload.</Text>
+            </Card>
+          )}
+        </Pressable>
         <Field label="Species" value={species} onChangeText={setSpecies} autoCapitalize="words" />
         <Field label="Locality" value={locality} onChangeText={setLocality} autoCapitalize="words" />
         <Field label="Provenance" value={provenance} onChangeText={setProvenance} />
@@ -71,11 +96,6 @@ export default function NewSpecimen() {
           onChangeText={setValue}
           keyboardType="decimal-pad"
         />
-        <Card>
-          <Text style={type.caption}>
-            Photos can be added from the specimen detail screen. EXIF/GPS is stripped before upload.
-          </Text>
-        </Card>
         <Button label="Save to catalog" onPress={save} loading={busy} />
       </ScrollView>
     </Screen>

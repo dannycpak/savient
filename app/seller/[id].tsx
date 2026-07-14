@@ -1,8 +1,9 @@
 import { useCallback, useState } from "react";
-import { ScrollView, Text, View } from "react-native";
+import { ScrollView, Text } from "react-native";
 import { useLocalSearchParams, useFocusEffect } from "expo-router";
 import { supabase } from "@/lib/supabase";
 import { Screen, Card, Eyebrow } from "@/components/ui";
+import { SellerBadge } from "@/components/SellerBadge";
 import { space, type } from "@/constants/theme";
 
 type Seller = {
@@ -56,9 +57,8 @@ export default function SellerProfile() {
         <Card>
           <Eyebrow>Credibility</Eyebrow>
           <Text style={type.display}>{(seller.credibility_score ?? 0).toFixed(1)}/10</Text>
-          <Text style={type.caption}>
-            {seller.tier ?? "self_certified"} · {seller.ratings_count ?? 0} ratings
-          </Text>
+          <SellerBadge score={seller.credibility_score} tier={seller.tier} />
+          <Text style={type.caption}>{seller.ratings_count ?? 0} ratings</Text>
         </Card>
         <Text style={type.h2}>Recent ratings</Text>
         {ratings.length === 0 ? (

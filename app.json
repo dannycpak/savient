@@ -43,7 +43,14 @@
           "photosPermission": "Sage needs photo access to add specimen images."
         }
       ],
-      "expo-image"
+      "expo-image",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/images/icon.png",
+          "color": "#46594A"
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true

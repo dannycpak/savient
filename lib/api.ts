@@ -54,4 +54,15 @@ export const api = {
     }),
   confirmDelivery: (orderId: string) =>
     invoke<{ ok: boolean }>("confirm-delivery", { order_id: orderId }),
+  createConnectAccount: (businessName?: string) =>
+    invoke<{
+      seller_id: string;
+      onboarding_url: string;
+      connect_onboarding_status: string;
+    }>("create-connect-account", businessName ? { business_name: businessName } : {}),
+  addTracking: (orderId: string, trackingNumber: string) =>
+    invoke<{ ok: boolean; status: string }>("add-tracking", {
+      order_id: orderId,
+      tracking_number: trackingNumber,
+    }),
 };

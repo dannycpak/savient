@@ -45,6 +45,8 @@ export default function Check() {
           { text: "Not now" },
           { text: "Get more", onPress: () => router.push("/paywall") },
         ]);
+      } else if (e instanceof ApiError && e.status === 429) {
+        Alert.alert("Slow down", "Too many checks — wait a minute and try again.");
       } else {
         Alert.alert("Check failed", "Something went wrong. Try again.");
       }

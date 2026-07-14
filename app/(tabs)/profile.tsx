@@ -52,6 +52,8 @@ export default function Profile() {
       {profile?.plan !== "plus" && (
         <Button label="Upgrade to Sage+" onPress={() => router.push("/paywall")} />
       )}
+      <Button label="Sell on Sage" variant="ghost" onPress={() => router.push("/seller/onboarding")} />
+      <Button label="My purchases" variant="ghost" onPress={() => router.push("/account/orders")} />
       <Button label="Account settings" variant="ghost" onPress={() => router.push("/account/settings")} />
       <Button label="Billing" variant="ghost" onPress={() => router.push("/account/billing")} />
     </Screen>
