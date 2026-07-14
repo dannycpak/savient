@@ -1,23 +1,51 @@
 # AGENTS.md
 
-Sage is a mobile-first mineral-collector app: Expo (iOS/Android) + Supabase (Postgres/RLS +
-Deno Edge Functions). Read `README.md`, `ARCHITECTURE.md`, `docs/BACKEND_SPEC.md`,
-`docs/STORE_SUBMISSION.md`, and `TODO.md`. `.cursorrules` encodes billing/security invariants.
+Sage is a mobile-first mineral-collector app: one Expo (React Native) codebase for iOS/Android
+plus a Supabase backend (Postgres + RLS in `supabase/migrations/`, Deno Edge Functions in
+`supabase/functions/`). See `README.md`, `ARCHITECTURE.md`, `docs/BACKEND_SPEC.md`,
+`docs/STORE_SUBMISSION.md`, and `TODO.md` for product/architecture detail, and `.cursorrules`
+for non-negotiable billing/security rules.
 
 ## Cursor Cloud specific instructions
 
-Standard scripts: `package.json` (`npm run typecheck`, `npm start`, `npm run web`).
+Standard commands live in `package.json` scripts; run them with `npm run <script>`.
 
-- **Dependencies:** `npm install` (lockfile: `package-lock.json`).
-- **Lint:** `npm run lint` fails — ESLint is not installed/configured in this repo.
-- **Typecheck:** `npm run typecheck` should pass.
-- **Env:** copy `.env.example` → `.env`. Without a real Supabase project, auth/network calls fail;
-  UI shell can still be exercised on web with temporary SecureStore shims (do not commit those).
-- **Web gotcha:** `expo-secure-store` throws on web (`lib/supabase.ts`, onboarding). Native is the
-  real target; IAP + Sign in with Apple need a **dev client** (`npx expo run:ios`), not Expo Go.
-- **Marketplace:** Market / Buy / Checkout are gated as “Coming soon” for first submission.
-  Do not un-gate until Phase 4 (Connect + PaymentSheet) is complete.
-- **Backend:** apply migrations `0001` + `0002`, deploy functions with `scripts/setup.sh` (interactive).
-  Schedule `purge-deleted-accounts` daily with `CRON_SECRET`.
-- **Store submit:** follow `docs/STORE_SUBMISSION.md`. Placeholders `REPLACE_WITH_*` in
-  `app.json` / `eas.json` must be filled before `eas build` / `eas submit`.
+- **Dependencies:** `npm install` (npm; `package-lock.json` is the lockfile). Installed automatically by the startup update script.
+- **Typecheck:** `npm run typecheck` (`tsc --noEmit`) — works and passes.
+- **Lint:** `npm run lint` maps to `eslint .`, but ESLint is **not installed and not configured**
+  (no eslint dependency, no eslint config in the repo), so it fails with `eslint: not found`.
+  Lint is not usable as-is; do not treat its failure as a regression.
+- **Env vars:** the app reads `EXPO_PUBLIC_SUPABASE_URL` / `EXPO_PUBLIC_SUPABASE_ANON_KEY` (and
+  optional RevenueCat / Google OAuth keys) at boot. Copy `.env.example` → `.env` and fill values.
+  Without a real Supabase project the UI still renders, but any auth/network call (login, signup)
+  will hang/fail.
+
+### Running the app (GUI testing in the cloud VM)
+
+- There are **no iOS/Android simulators** in the cloud VM, so the only browser-testable surface is
+  Expo web: `npx expo start --web` (Metro serves on `http://localhost:8081`). Trigger a real bundle
+  compile by requesting the page; first bundle takes ~5-15s.
+- **Web gotcha (important):** `expo-secure-store` is **native-only and throws on web**. It is used
+  for Supabase session storage in `lib/supabase.ts` and also in `app/index.tsx` and
+  `app/onboarding.tsx`. As written the app **crashes on web** at boot
+  (`ExpoSecureStore.default.getValueWithKeyAsync is not a function`). To render/test in a browser you
+  must temporarily shim SecureStore with a `localStorage`-backed adapter when `Platform.OS === "web"`.
+  Treat this as a throwaway testing aid — do not commit it (the app targets native, not web).
+- **Native target:** IAP + Sign in with Apple need a **dev client** (`npx expo run:ios` /
+  `npx expo run:android`), not Expo Go.
+
+### Supabase backend
+
+- Apply migrations `0001` + `0002` (storage buckets/policies). Edge Functions require the Supabase
+  CLI plus either a linked cloud project or a local Docker stack; neither is installed by default.
+- `scripts/setup.sh` is **interactive** (prompts for Anthropic/Stripe/RevenueCat/CRON secrets and
+  `supabase link`) — it cannot run unattended. Secret-bearing values belong only in Edge Function
+  env, never in the Expo app.
+- Schedule `purge-deleted-accounts` daily with `CRON_SECRET` (App Store 30-day account deletion).
+
+### Store submission
+
+- Marketplace Buy / Checkout are gated as “Coming soon” for the first submission. Do not un-gate
+  until Phase 4 (Connect + PaymentSheet) is complete.
+- Follow `docs/STORE_SUBMISSION.md`. Placeholders `REPLACE_WITH_*` in `app.json` / `eas.json` must
+  be filled before `eas build` / `eas submit`.
