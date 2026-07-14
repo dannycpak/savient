@@ -16,7 +16,7 @@ fi
 echo "▸ Linking to your Supabase cloud project (skip with ctrl-c if local-only)…"
 supabase link || true
 
-echo "▸ Applying migrations…"
+echo "▸ Applying migrations (schema, RLS, private storage buckets)…"
 supabase db push
 
 echo "▸ Setting Edge Function secrets (paste values when prompted)…"
@@ -38,7 +38,7 @@ supabase functions deploy stripe-webhook --no-verify-jwt
 supabase functions deploy revenuecat-webhook --no-verify-jwt
 
 echo "▸ Reminders:"
-echo "  1. Create storage buckets: specimen-photos (private), check-uploads (private)."
+echo "  1. Storage buckets specimen-photos + check-uploads are created by migration (private, path = {uid}/…)."
 echo "  2. Point the Stripe webhook endpoint at .../functions/v1/stripe-webhook."
 echo "  3. Point the RevenueCat webhook at .../functions/v1/revenuecat-webhook with the Bearer auth you just set."
 echo "  4. Copy .env.example → .env and fill the EXPO_PUBLIC_ values."
