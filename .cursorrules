@@ -1,6 +1,8 @@
 # Sage — Cursor rules
 
-Read ARCHITECTURE.md, docs/BACKEND_SPEC.md, and TODO.md before generating code.
+Read ARCHITECTURE.md, docs/BACKEND_SPEC.md, docs/PRODUCT_SPEC.md, and TODO.md before generating code.
+For store/legal/ops: docs/STORE_SETUP.md, docs/IAP_PRODUCTS.md, docs/LEGAL_DISCLAIMER.md,
+docs/APP_REVIEW.md, docs/RECONCILIATION.md. Product IDs live in config/iap-products.json.
 Build phases in TODO.md order. Do not skip ahead to marketplace before Auth + Catalog + Visual Check work.
 
 ## Billing isolation (non-negotiable)
