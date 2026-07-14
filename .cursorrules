@@ -1,0 +1,31 @@
+# Sage — Cursor rules
+
+Read ARCHITECTURE.md, docs/BACKEND_SPEC.md, and TODO.md before generating code.
+Build phases in TODO.md order. Do not skip ahead to marketplace before Auth + Catalog + Visual Check work.
+
+## Billing isolation (non-negotiable)
+1. Digital goods (Sage+ subscription, Visual Check credit packs) = RevenueCat / StoreKit / Play Billing ONLY.
+2. Physical goods (marketplace specimen purchases) = Stripe Connect ONLY (destination charge, manual capture).
+3. Never charge for digital goods through Stripe inside the mobile app.
+4. Feature gates read DB truth written by webhooks (`profiles.plan`, `credit_ledger`) — never client purchase state alone.
+
+## Security
+- Anthropic, Stripe secret, RevenueCat webhook auth: Edge Function env only. Never ship in the app.
+- RLS on every table; storage buckets private with signed URLs.
+- Strip EXIF/GPS client-side before any photo upload (`lib/images.ts`).
+- Price math in integer cents, server-side only. Client never sends amounts for orders.
+- Soft-delete accounts + 30-day purge (App Store requirement).
+
+## Deno Edge Functions
+- Use Deno-style imports (`https://esm.sh/...` or `npm:`). Do not use Node `require`.
+- Shared CORS helpers live in `supabase/functions/_shared/cors.ts`.
+- Webhooks (`revenuecat-webhook`, `stripe-webhook`) deploy with `--no-verify-jwt` and verify their own signatures.
+
+## Design language
+Warm bone `#EBE7DD`, ink `#22281F`, sage green `#46594A` (hover `#2E3B31`), muted `#6C7265`, faint `#98938A`.
+Display: Instrument Serif. UI: Instrument Sans. Tokens live in `constants/theme.ts`.
+Calm archival / field-journal feel — specimen cabinet, not fintech dashboard.
+
+## Visual Check framing
+Every result screen must show the second-opinion disclaimer from `constants/copy.ts`.
+Never present Visual Check as certified authentication.

@@ -1,0 +1,52 @@
+{
+  "expo": {
+    "name": "Sage",
+    "slug": "sage",
+    "version": "0.1.0",
+    "scheme": "sage",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "backgroundColor": "#EBE7DD",
+    "icon": "./assets/images/icon.png",
+    "splash": {
+      "image": "./assets/images/splash-icon.png",
+      "backgroundColor": "#EBE7DD",
+      "resizeMode": "contain"
+    },
+    "ios": {
+      "bundleIdentifier": "com.jbstratis.sage",
+      "supportsTablet": false,
+      "usesAppleSignIn": true,
+      "infoPlist": {
+        "NSCameraUsageDescription": "Sage uses the camera to photograph specimens for your catalog and Visual Checks.",
+        "NSPhotoLibraryUsageDescription": "Sage uses your photo library to add specimen photos to your catalog and Visual Checks."
+      }
+    },
+    "android": {
+      "package": "com.jbstratis.sage",
+      "permissions": [
+        "CAMERA",
+        "READ_MEDIA_IMAGES"
+      ],
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/images/android-icon-foreground.png",
+        "backgroundColor": "#EBE7DD"
+      }
+    },
+    "plugins": [
+      "expo-router",
+      "expo-secure-store",
+      "expo-apple-authentication",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Sage needs photo access to add specimen images."
+        }
+      ],
+      "expo-image"
+    ],
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}
