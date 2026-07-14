@@ -29,7 +29,8 @@ money-touching logic. Three isolated billing rails (see `.cursorrules` → Billi
 │       ├── create-order/index.ts        # PaymentIntent (manual capture) for a listing
 │       ├── confirm-delivery/index.ts    # Capture + transfer to seller (escrow release)
 │       ├── create-connect-account/index.ts  # Stripe Connect Express onboarding link
-│       └── add-tracking/index.ts        # Seller ships → order status shipped
+│       ├── add-tracking/index.ts        # Seller ships → order status shipped
+│       └── reconcile/index.ts           # Cron: credit audit, stuck webhooks, auto-confirm
 ├── lib/
 │   ├── supabase.ts                  # Client singleton + typed helpers
 │   ├── api.ts                       # Edge Function fetch wrapper (bearer token)

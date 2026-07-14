@@ -4,8 +4,9 @@
 // the client uses CustomerInfo only for immediate UI feedback after purchase.
 import { Platform } from "react-native";
 import Purchases, { type PurchasesPackage } from "react-native-purchases";
+import { IAP } from "@/constants/copy";
 
-export const ENTITLEMENT_PLUS = "plus";
+export const ENTITLEMENT_PLUS = IAP.entitlementPlus;
 
 export async function configurePurchases(supabaseUserId: string) {
   const apiKey =
