@@ -2,9 +2,9 @@ import { useLocalSearchParams, router } from "expo-router";
 import { useState } from "react";
 import { Alert, ScrollView, Text, View } from "react-native";
 import { supabase } from "@/lib/supabase";
-import { Screen, Button, Field, Card } from "@/components/ui";
+import { Screen, Button, SoftInput } from "@/components/ui";
 import { FREE_TIER } from "@/constants/copy";
-import { space, type } from "@/constants/theme";
+import { colors, space } from "@/constants/theme";
 
 export default function NewSpecimen() {
   const { species: preset } = useLocalSearchParams<{ species?: string }>();
@@ -59,24 +59,35 @@ export default function NewSpecimen() {
   };
 
   return (
-    <Screen style={{ padding: 0 }}>
-      <ScrollView contentContainerStyle={{ padding: space.lg, gap: space.md }}>
-        <Text style={type.h1}>Add specimen</Text>
-        <Field label="Species" value={species} onChangeText={setSpecies} autoCapitalize="words" />
-        <Field label="Locality" value={locality} onChangeText={setLocality} autoCapitalize="words" />
-        <Field label="Provenance" value={provenance} onChangeText={setProvenance} />
-        <Field
-          label="Estimated value (USD)"
-          value={value}
-          onChangeText={setValue}
-          keyboardType="decimal-pad"
-        />
-        <Card>
-          <Text style={type.caption}>
+    <Screen style={{ paddingHorizontal: 0 }}>
+      <ScrollView contentContainerStyle={{ paddingHorizontal: 20, paddingTop: space.md, paddingBottom: space.xl, gap: 14 }}>
+        <Text style={{ fontFamily: "InstrumentSerif_400Regular", fontSize: 30, color: colors.ink }}>
+          Add specimen
+        </Text>
+        <View
+          style={{
+            backgroundColor: colors.white,
+            borderWidth: 1,
+            borderColor: colors.border,
+            borderRadius: 18,
+            padding: 18,
+            gap: 12,
+          }}
+        >
+          <SoftInput placeholder="Species" value={species} onChangeText={setSpecies} autoCapitalize="words" />
+          <SoftInput placeholder="Locality" value={locality} onChangeText={setLocality} autoCapitalize="words" />
+          <SoftInput placeholder="Provenance" value={provenance} onChangeText={setProvenance} />
+          <SoftInput
+            placeholder="Estimated value (USD)"
+            value={value}
+            onChangeText={setValue}
+            keyboardType="decimal-pad"
+          />
+          <Text style={{ fontSize: 12.5, color: colors.muted, lineHeight: 18 }}>
             Photos can be added from the specimen detail screen. EXIF/GPS is stripped before upload.
           </Text>
-        </Card>
-        <Button label="Save to catalog" onPress={save} loading={busy} />
+          <Button label="Save to catalog" onPress={save} loading={busy} />
+        </View>
       </ScrollView>
     </Screen>
   );

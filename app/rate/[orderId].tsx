@@ -1,9 +1,9 @@
 import { useState } from "react";
-import { Alert, Pressable, Text, View } from "react-native";
+import { Alert, Text, View } from "react-native";
 import { useLocalSearchParams, router } from "expo-router";
 import { supabase } from "@/lib/supabase";
-import { Screen, Card, Button, Eyebrow } from "@/components/ui";
-import { colors, space, type } from "@/constants/theme";
+import { Screen, Button, Chip } from "@/components/ui";
+import { colors } from "@/constants/theme";
 
 const ACCURACY = [
   { id: "as_described", label: "As described" },
@@ -13,13 +13,24 @@ const ACCURACY = [
 
 export default function RatePurchase() {
   const { orderId } = useLocalSearchParams<{ orderId: string }>();
-  const [accuracy, setAccuracy] = useState<(typeof ACCURACY)[number]["id"]>("as_described");
-  const [photoMatch, setPhotoMatch] = useState(true);
+  const isDemo = !orderId || orderId.startsWith("demo");
+  const [accuracy, setAccuracy] = useState<(typeof ACCURACY)[number]["id"] | null>(null);
+  const [photoMatch, setPhotoMatch] = useState<boolean | null>(null);
   const [busy, setBusy] = useState(false);
 
   const submit = async () => {
+    if (!accuracy || photoMatch == null) {
+      Alert.alert("Almost there", "Choose accuracy and photo match before submitting.");
+      return;
+    }
     setBusy(true);
     try {
+      if (isDemo) {
+        await new Promise((r) => setTimeout(r, 400));
+        Alert.alert("Thanks", "Your rating updates seller credibility.");
+        router.back();
+        return;
+      }
       const {
         data: { user },
       } = await supabase.auth.getUser();
@@ -48,29 +59,42 @@ export default function RatePurchase() {
   };
 
   return (
-    <Screen style={{ gap: space.lg }}>
-      <Text style={type.h1}>Rate purchase</Text>
-      <Card>
-        <Eyebrow>Material accuracy</Eyebrow>
-        {ACCURACY.map((o) => (
-          <Pressable key={o.id} onPress={() => setAccuracy(o.id)}>
-            <Text style={[type.body, { color: accuracy === o.id ? colors.primary : colors.ink }]}>
-              {accuracy === o.id ? "● " : "○ "}
-              {o.label}
-            </Text>
-          </Pressable>
-        ))}
-      </Card>
-      <Card>
-        <Eyebrow>Photos matched the piece</Eyebrow>
-        <Pressable onPress={() => setPhotoMatch(true)}>
-          <Text style={type.body}>{photoMatch ? "● " : "○ "}Yes, matched</Text>
-        </Pressable>
-        <Pressable onPress={() => setPhotoMatch(false)}>
-          <Text style={type.body}>{!photoMatch ? "● " : "○ "}Not quite</Text>
-        </Pressable>
-      </Card>
-      <Button label="Submit rating" onPress={submit} loading={busy} />
+    <Screen style={{ justifyContent: "flex-end", paddingBottom: 24 }} edges={["top", "left", "right", "bottom"]}>
+      <View
+        style={{
+          backgroundColor: colors.bg,
+          borderTopLeftRadius: 26,
+          borderTopRightRadius: 26,
+          padding: 24,
+          paddingBottom: 16,
+        }}
+      >
+        <Text style={{ fontFamily: "InstrumentSerif_400Regular", fontSize: 24, color: colors.ink }}>
+          How was the wulfenite?
+        </Text>
+        <Text style={{ fontSize: 14, color: colors.muted, marginTop: 4 }}>
+          DesertRock Co. · rated on material accuracy only
+        </Text>
+
+        <Text style={{ fontSize: 13, fontFamily: "InstrumentSans_600SemiBold", marginTop: 18, marginBottom: 8 }}>
+          Was it what the listing said it was?
+        </Text>
+        <View style={{ flexDirection: "row", gap: 8 }}>
+          {ACCURACY.map((o) => (
+            <Chip key={o.id} label={o.label} selected={accuracy === o.id} onPress={() => setAccuracy(o.id)} />
+          ))}
+        </View>
+
+        <Text style={{ fontSize: 13, fontFamily: "InstrumentSans_600SemiBold", marginTop: 18, marginBottom: 8 }}>
+          Did it match the listing photos?
+        </Text>
+        <View style={{ flexDirection: "row", gap: 8 }}>
+          <Chip label="Yes, matched" selected={photoMatch === true} onPress={() => setPhotoMatch(true)} />
+          <Chip label="Not quite" selected={photoMatch === false} onPress={() => setPhotoMatch(false)} />
+        </View>
+
+        <Button label="Submit rating" onPress={submit} loading={busy} style={{ marginTop: 22 }} />
+      </View>
     </Screen>
   );
 }

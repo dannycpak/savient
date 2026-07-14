@@ -34,15 +34,21 @@ export default function RootLayout() {
         <Stack.Screen name="onboarding" options={{ headerShown: false }} />
         <Stack.Screen name="(auth)" options={{ headerShown: false }} />
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="paywall" options={{ presentation: "modal", title: "Sage+" }} />
-        <Stack.Screen name="specimen/[id]" options={{ title: "Specimen" }} />
+        <Stack.Screen name="paywall" options={{ presentation: "modal", headerShown: false }} />
+        <Stack.Screen name="specimen/[id]" options={{ headerShown: false }} />
         <Stack.Screen name="specimen/new" options={{ title: "Add specimen" }} />
-        <Stack.Screen name="listing/[id]" options={{ title: "Listing" }} />
-        <Stack.Screen name="seller/[id]" options={{ title: "Seller" }} />
-        <Stack.Screen name="checkout/[listingId]" options={{ title: "Checkout" }} />
-        <Stack.Screen name="rate/[orderId]" options={{ title: "Rate purchase" }} />
-        <Stack.Screen name="account/settings" options={{ title: "Account" }} />
-        <Stack.Screen name="account/billing" options={{ title: "Billing" }} />
+        <Stack.Screen name="listing/[id]" options={{ headerShown: false }} />
+        <Stack.Screen name="seller/[id]" options={{ headerShown: false }} />
+        <Stack.Screen
+          name="checkout/[listingId]"
+          options={{ presentation: "modal", headerShown: false }}
+        />
+        <Stack.Screen
+          name="rate/[orderId]"
+          options={{ presentation: "modal", headerShown: false }}
+        />
+        <Stack.Screen name="account/settings" options={{ headerShown: false }} />
+        <Stack.Screen name="account/billing" options={{ headerShown: false }} />
       </Stack>
     </AuthProvider>
   );
