@@ -91,7 +91,16 @@ Deno.serve(async (req) => {
     if (insertErr) return json({ error: insertErr.message }, 500);
 
     const anthropicKey = Deno.env.get("ANTHROPIC_API_KEY");
-    if (!anthropicKey) return json({ error: "AI not configured" }, 500);
+    if (!anthropicKey) {
+      await admin
+        .from("visual_checks")
+        .update({ status: "failed", completed_at: new Date().toISOString() })
+        .eq("id", checkRow.id);
+      if (typeof consumed === "string") {
+        await admin.rpc("refund_check", { p_user_id: userId, p_consumed: consumed });
+      }
+      return json({ error: "AI not configured" }, 500);
+    }
 
     const imgRes = await fetch(signed.signedUrl);
     const buf = new Uint8Array(await imgRes.arrayBuffer());
@@ -133,6 +142,10 @@ Deno.serve(async (req) => {
         .from("visual_checks")
         .update({ status: "failed", completed_at: new Date().toISOString() })
         .eq("id", checkRow.id);
+      // Refund quota/credit consumed before the failed AI call
+      if (typeof consumed === "string") {
+        await admin.rpc("refund_check", { p_user_id: userId, p_consumed: consumed });
+      }
       return json({ error: "Vision model failed" }, 502);
     }
 

@@ -13,7 +13,7 @@ export default function ForgotPassword() {
   const submit = async () => {
     setBusy(true);
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: "sage://reset-password",
+      redirectTo: "sage://auth/reset-password",
     });
     setBusy(false);
     if (error) Alert.alert("Reset failed", error.message);

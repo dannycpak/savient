@@ -34,6 +34,38 @@ export async function uploadSpecimenPhoto(localUri: string, specimenId: string) 
   return data;
 }
 
+export async function uploadListingPhoto(localUri: string, listingId: string) {
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) throw new Error("Not signed in");
+
+  const clean = await stripExifAndResize(localUri);
+  const path = `${user.id}/listings/${listingId}/${Date.now()}.jpg`;
+  const file = await fetch(clean).then((r) => r.arrayBuffer());
+  const { error: upErr } = await supabase.storage
+    .from("specimen-photos")
+    .upload(path, file, { contentType: "image/jpeg", upsert: false });
+  if (upErr) throw upErr;
+
+  const { count } = await supabase
+    .from("listing_photos")
+    .select("id", { count: "exact", head: true })
+    .eq("listing_id", listingId);
+
+  const { data, error } = await supabase
+    .from("listing_photos")
+    .insert({
+      listing_id: listingId,
+      storage_path: path,
+      is_primary: (count ?? 0) === 0,
+    })
+    .select("id, storage_path, is_primary")
+    .single();
+  if (error) throw error;
+  return data;
+}
+
 export async function signedPhotoUrl(storagePath: string, expiresIn = 3600) {
   const { data, error } = await supabase.storage
     .from("specimen-photos")

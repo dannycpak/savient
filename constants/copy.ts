@@ -19,9 +19,12 @@ export const IAP = {
 export const COPY = {
   appName: "Sage",
   tagline: "Your specimen cabinet, kept well.",
-  paywallHeadline: "Go unlimited with Sage+",
+  paywallHeadline: "Sage+",
   paywallBody:
-    "Unlimited Visual Checks, unlimited cataloging, and collection valuation analytics. First month free.",
+    "Unlimited second opinions, your whole collection, and the full picture on prices.",
   emptyCatalog:
     "Your catalog is empty. Add your first specimen — or run a Visual Check and save the result.",
+  marketSub: "Every seller credibility-scored. Every listing photo-verified.",
+  checkIntro:
+    "Deciding whether to buy? Snap the listing photo and we'll ID the species, flag common tricks, and compare the price to real purchases.",
 } as const;

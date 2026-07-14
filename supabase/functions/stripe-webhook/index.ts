@@ -47,18 +47,28 @@ Deno.serve(async (req) => {
       }
       case "payment_intent.amount_capturable_updated": {
         const pi = event.data.object as Stripe.PaymentIntent;
-        await admin
+        const { data: order } = await admin
           .from("orders")
           .update({ status: "escrow_held" })
-          .eq("stripe_payment_intent_id", pi.id);
+          .eq("stripe_payment_intent_id", pi.id)
+          .select("listing_id")
+          .maybeSingle();
+        if (order?.listing_id) {
+          await admin.from("listings").update({ status: "sold" }).eq("id", order.listing_id);
+        }
         break;
       }
       case "payment_intent.succeeded": {
         const pi = event.data.object as Stripe.PaymentIntent;
-        await admin
+        const { data: order } = await admin
           .from("orders")
           .update({ status: "released" })
-          .eq("stripe_payment_intent_id", pi.id);
+          .eq("stripe_payment_intent_id", pi.id)
+          .select("listing_id")
+          .maybeSingle();
+        if (order?.listing_id) {
+          await admin.from("listings").update({ status: "sold" }).eq("id", order.listing_id);
+        }
         break;
       }
       case "charge.refunded": {

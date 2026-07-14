@@ -66,12 +66,13 @@ if [ "${SKIP_DEPLOY:-0}" != "1" ]; then
 fi
 
 echo "▸ Reminders:"
-echo "  1. Storage buckets specimen-photos + check-uploads are created by migration 0002."
+echo "  1. Storage buckets specimen-photos + check-uploads are created by migrations (private, path = {uid}/…)."
 echo "  2. Point Stripe webhook at .../functions/v1/stripe-webhook."
 echo "  3. Point RevenueCat webhook at .../functions/v1/revenuecat-webhook with Bearer auth."
 echo "  4. Schedule POST .../functions/v1/reconcile hourly with x-cron-secret (docs/RECONCILIATION.md)."
 echo "  5. Create IAP products from config/iap-products.json (docs/IAP_PRODUCTS.md)."
 echo "  6. Enable Apple + Google providers in Supabase Auth; set EXPO_PUBLIC_GOOGLE_* in .env."
-echo "  7. Fill remaining EXPO_PUBLIC_* values in .env; follow docs/APP_REVIEW.md before submit."
+echo "  7. Set EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY for PaymentSheet (physical goods only)."
+echo "  8. Fill remaining EXPO_PUBLIC_* values in .env; follow docs/APP_REVIEW.md before submit."
 echo "✓ Done. Start the app with: npx expo start"
-echo "  (RevenueCat + Apple Sign-In need a dev client: npx expo run:ios)"
+echo "  (RevenueCat + Apple Sign-In + Stripe PaymentSheet need a dev client: npx expo run:ios)"

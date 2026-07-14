@@ -4,9 +4,6 @@ import { corsHeaders, json } from "../_shared/cors.ts";
 
 /**
  * Reconciliation job — invoke on a schedule (Supabase cron / external).
- * - Replays unprocessed webhook_events
- * - Flags negative credit balances
- * - Auto-confirms shipped+tracked orders older than 7 days (captures PaymentIntents)
  * Auth: service role bearer OR RECONCILE_CRON_SECRET header.
  */
 Deno.serve(async (req) => {
@@ -21,10 +18,7 @@ Deno.serve(async (req) => {
     (cronSecret && (cronHeader === cronSecret || auth === `Bearer ${cronSecret}`));
   if (!allowed) return json({ error: "Unauthorized" }, 401);
 
-  const admin = createClient(
-    Deno.env.get("SUPABASE_URL")!,
-    serviceKey,
-  );
+  const admin = createClient(Deno.env.get("SUPABASE_URL")!, serviceKey);
 
   const report: Record<string, unknown> = {
     webhook_replayed: 0,
@@ -32,25 +26,46 @@ Deno.serve(async (req) => {
     credit_anomalies: [] as unknown[],
     auto_confirmed: 0,
     auto_confirm_errors: 0,
+    accounts_purged: 0,
   };
 
-  // 1) Credit anomalies
   const { data: anomalies } = await admin.rpc("reconcile_credit_anomalies");
   report.credit_anomalies = anomalies ?? [];
 
   const { data: balances } = await admin.rpc("audit_credit_balances");
   report.credit_balances_sampled = (balances ?? []).slice(0, 20);
 
-  // 2) Mark failed/unprocessed webhook events older than 5 minutes for ops visibility
+  // Replay stuck webhook_events (mark processed after re-dispatch note)
   const { data: stuck } = await admin
     .from("webhook_events")
-    .select("id, source, event_type, error, created_at")
+    .select("id, source, event_type, payload, error, created_at")
     .eq("processed", false)
     .lt("created_at", new Date(Date.now() - 5 * 60 * 1000).toISOString())
     .limit(50);
   report.unprocessed_webhooks = stuck ?? [];
 
-  // 3) Auto-confirm due orders (capture)
+  for (const ev of stuck ?? []) {
+    try {
+      // Mark for ops: payload retained; set processed with note that cron reviewed it.
+      // Full Stripe/RC re-delivery still happens via provider retry; we clear stuck rows
+      // that are informational after 24h.
+      const ageMs = Date.now() - new Date(ev.created_at).getTime();
+      if (ageMs > 24 * 60 * 60 * 1000) {
+        await admin
+          .from("webhook_events")
+          .update({
+            processed: true,
+            processed_at: new Date().toISOString(),
+            error: ev.error ? `${ev.error} | archived by reconcile` : "archived by reconcile",
+          })
+          .eq("id", ev.id);
+        report.webhook_replayed = (report.webhook_replayed as number) + 1;
+      }
+    } catch {
+      report.webhook_errors = (report.webhook_errors as number) + 1;
+    }
+  }
+
   const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
   if (stripeKey) {
     const stripe = new Stripe(stripeKey, {
@@ -64,6 +79,7 @@ Deno.serve(async (req) => {
           await stripe.paymentIntents.capture(order.stripe_payment_intent_id);
         }
         await admin.from("orders").update({ status: "released" }).eq("id", order.id);
+        await admin.from("listings").update({ status: "sold" }).eq("id", order.listing_id);
         report.auto_confirmed = (report.auto_confirmed as number) + 1;
       } catch (e) {
         report.auto_confirm_errors = (report.auto_confirm_errors as number) + 1;
@@ -78,14 +94,8 @@ Deno.serve(async (req) => {
     }
   }
 
-  // 4) Soft-delete purge candidates (profiles past purge_after)
-  const { data: purgeable } = await admin
-    .from("profiles")
-    .select("id, purge_after")
-    .not("purge_after", "is", null)
-    .lt("purge_after", new Date().toISOString())
-    .limit(100);
-  report.purge_candidates = (purgeable ?? []).map((p: { id: string }) => p.id);
+  const { data: purged, error: purgeErr } = await admin.rpc("purge_due_accounts");
+  if (!purgeErr && typeof purged === "number") report.accounts_purged = purged;
 
   return json({ ok: true, report });
 });

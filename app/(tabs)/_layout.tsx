@@ -1,72 +1,150 @@
-import { Tabs } from "expo-router";
-import { Text } from "react-native";
+import type { ReactNode } from "react";
+import { useEffect } from "react";
+import { Tabs, router } from "expo-router";
+import { Pressable, Text, View, StyleSheet, ActivityIndicator } from "react-native";
+import { useAuth } from "@/lib/auth";
 import { colors } from "@/constants/theme";
+import { IconCamera, IconCollection, IconHome, IconMarket, IconProfile } from "@/components/icons";
+import { registerAndSavePushToken } from "@/lib/notifications";
 
-function TabLabel({ label, focused }: { label: string; focused: boolean }) {
+function TabItem({
+  label,
+  focused,
+  icon,
+}: {
+  label: string;
+  focused: boolean;
+  icon: (color: string) => ReactNode;
+}) {
+  const color = focused ? colors.primary : "#9AA095";
   return (
-    <Text
-      style={{
-        fontFamily: focused ? "InstrumentSans_600SemiBold" : "InstrumentSans_400Regular",
-        fontSize: 11,
-        color: focused ? colors.primary : colors.faint,
-      }}
+    <View style={styles.tabItem}>
+      {icon(color)}
+      <Text style={[styles.tabLabel, { color }]}>{label}</Text>
+    </View>
+  );
+}
+
+function CheckFab() {
+  return (
+    <Pressable
+      onPress={() => router.push("/(tabs)/check")}
+      style={styles.fab}
+      accessibilityRole="button"
+      accessibilityLabel="Visual Check"
     >
-      {label}
-    </Text>
+      <IconCamera color={colors.cream} size={24} />
+    </Pressable>
   );
 }
 
 export default function TabsLayout() {
+  const { session, loading } = useAuth();
+
+  useEffect(() => {
+    if (!loading && !session) router.replace("/(auth)/login");
+  }, [loading, session]);
+
+  useEffect(() => {
+    if (session?.user) registerAndSavePushToken().catch(() => {});
+  }, [session?.user?.id]);
+
+  if (loading || !session) {
+    return (
+      <View style={{ flex: 1, backgroundColor: colors.bg, alignItems: "center", justifyContent: "center" }}>
+        <ActivityIndicator color={colors.primary} />
+      </View>
+    );
+  }
+
   return (
     <Tabs
       screenOptions={{
-        headerStyle: { backgroundColor: colors.bg },
-        headerTintColor: colors.ink,
-        headerShadowVisible: false,
-        headerTitleStyle: { fontFamily: "InstrumentSans_600SemiBold" },
-        tabBarStyle: {
-          backgroundColor: colors.bg,
-          borderTopColor: colors.border,
-        },
+        headerShown: false,
+        tabBarStyle: styles.tabBar,
+        tabBarShowLabel: false,
         tabBarActiveTintColor: colors.primary,
-        tabBarInactiveTintColor: colors.faint,
+        tabBarInactiveTintColor: "#9AA095",
       }}
     >
       <Tabs.Screen
         name="index"
         options={{
           title: "Home",
-          tabBarLabel: ({ focused }) => <TabLabel label="Home" focused={focused} />,
+          tabBarIcon: ({ focused }) => (
+            <TabItem label="Home" focused={focused} icon={(c) => <IconHome color={c} />} />
+          ),
         }}
       />
       <Tabs.Screen
         name="catalog"
         options={{
-          title: "Catalog",
-          tabBarLabel: ({ focused }) => <TabLabel label="Catalog" focused={focused} />,
+          title: "Collection",
+          tabBarIcon: ({ focused }) => (
+            <TabItem label="Collection" focused={focused} icon={(c) => <IconCollection color={c} />} />
+          ),
         }}
       />
       <Tabs.Screen
         name="check"
         options={{
-          title: "Visual Check",
-          tabBarLabel: ({ focused }) => <TabLabel label="Check" focused={focused} />,
+          title: "Check",
+          tabBarButton: () => <CheckFab />,
         }}
       />
       <Tabs.Screen
         name="market"
         options={{
           title: "Market",
-          tabBarLabel: ({ focused }) => <TabLabel label="Market" focused={focused} />,
+          tabBarIcon: ({ focused }) => (
+            <TabItem label="Market" focused={focused} icon={(c) => <IconMarket color={c} />} />
+          ),
         }}
       />
       <Tabs.Screen
         name="profile"
         options={{
           title: "Profile",
-          tabBarLabel: ({ focused }) => <TabLabel label="Profile" focused={focused} />,
+          tabBarIcon: ({ focused }) => (
+            <TabItem label="Profile" focused={focused} icon={(c) => <IconProfile color={c} />} />
+          ),
         }}
       />
     </Tabs>
   );
 }
+
+const styles = StyleSheet.create({
+  tabBar: {
+    backgroundColor: colors.white,
+    borderTopColor: colors.border,
+    borderTopWidth: 1,
+    height: 78,
+    paddingTop: 8,
+    paddingBottom: 18,
+  },
+  tabItem: {
+    alignItems: "center",
+    gap: 3,
+    paddingTop: 2,
+    minWidth: 64,
+  },
+  tabLabel: {
+    fontSize: 10.5,
+    fontFamily: "InstrumentSans_600SemiBold",
+  },
+  fab: {
+    width: 54,
+    height: 54,
+    borderRadius: 27,
+    backgroundColor: colors.primary,
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: -24,
+    shadowColor: colors.primaryHover,
+    shadowOpacity: 0.35,
+    shadowRadius: 16,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 6,
+  },
+});

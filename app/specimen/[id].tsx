@@ -208,7 +208,12 @@ export default function SpecimenDetail() {
         <Button
           label="Buy similar"
           variant="ghost"
-          onPress={() => router.push("/(tabs)/market")}
+          onPress={() =>
+            router.push({
+              pathname: "/(tabs)/market",
+              params: { q: row.species },
+            })
+          }
         />
         <Button label="Delete" variant="danger" onPress={remove} />
       </ScrollView>

@@ -8,6 +8,6 @@ command -v supabase >/dev/null || {
   exit 1
 }
 
-echo "▸ Pushing migrations 0001–0007…"
+echo "▸ Pushing migrations 0001–0008…"
 supabase db push
 echo "✓ Applied. See docs/STORE_SETUP.md for Auth providers + webhooks."

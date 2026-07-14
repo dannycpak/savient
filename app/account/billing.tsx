@@ -1,7 +1,6 @@
 import { useCallback, useState } from "react";
-import { Linking, Text } from "react-native";
+import { Linking, Platform, Text, View } from "react-native";
 import { router, useFocusEffect } from "expo-router";
-import { Platform } from "react-native";
 import { supabase } from "@/lib/supabase";
 import { Screen, Card, Button, Eyebrow } from "@/components/ui";
 import { space, type } from "@/constants/theme";
@@ -30,15 +29,29 @@ export default function Billing() {
   };
 
   return (
-    <Screen style={{ gap: space.md }}>
-      <Text style={type.h1}>Billing</Text>
+    <Screen style={{ gap: space.md, paddingTop: space.md }}>
+      <Text style={type.h1}>Billing & payments</Text>
       <Card>
         <Eyebrow>Plan</Eyebrow>
         <Text style={type.h2}>{plan === "plus" ? "Sage+" : "Free"}</Text>
-        <Text style={type.caption}>{credits} Visual Check credits</Text>
+        <Text style={type.caption}>
+          {plan === "plus"
+            ? "Unlimited Visual Checks & cataloging. Cancel anytime in the App Store / Play subscription settings."
+            : "3 Visual Checks / month · 25 specimen catalog"}
+        </Text>
+        <Text style={type.caption}>{credits} Visual Check credits on hand (never expire)</Text>
       </Card>
-      <Button label="Get Sage+ / credits" onPress={() => router.push("/paywall")} />
-      <Button label="Manage subscription" variant="ghost" onPress={manage} />
+      {plan !== "plus" ? (
+        <Button label="Go unlimited with Sage+" onPress={() => router.push("/paywall")} />
+      ) : (
+        <Button label="Cancel subscription" variant="ghost" onPress={manage} />
+      )}
+      <Button label="Buy credit packs" variant="ghost" onPress={() => router.push("/paywall")} />
+      <Button label="Manage payment method" variant="ghost" onPress={manage} />
+      <Text style={type.caption}>
+        Digital goods (Sage+, credits) use App Store / Play Billing via RevenueCat. Marketplace
+        specimen purchases use Stripe Connect escrow separately.
+      </Text>
     </Screen>
   );
 }

@@ -5,65 +5,59 @@ Build strictly in this order. Each phase ships a usable increment and de-risks t
 
 ## Phase 0 — Project bootstrap
 - [x] Run `scripts/setup.sh` (deps, supabase init, functions scaffolds, secrets prompts).
-- [x] Apply `supabase/migrations/0001_initial_schema.sql` (`supabase db push` or `db reset`).
-- [x] Create Supabase Storage buckets: `specimen-photos` (private), `check-uploads` (private).
+- [x] Apply migrations `0001`–`0008` (`supabase db push` / `./scripts/apply-db.sh`).
+- [x] Storage buckets `specimen-photos` + `check-uploads` (private, uid-scoped RLS).
 - [x] Fill `.env` from `.env.example`; confirm app boots in Expo Go / dev client.
+  - *Native modules (Apple Sign-In, RevenueCat, Stripe PaymentSheet) need a **dev client**.*
 
 ## Phase 1 — Auth + Catalog (core value, zero billing)
-- [x] Supabase Auth: email/password sign-up, login, password reset (magic link).
-- [x] Sign in with Apple + Google OAuth (Apple is REQUIRED for App Store if Google is offered).
+- [x] Supabase Auth: email/password sign-up, login, password reset (`sage://auth/reset-password`).
+- [x] Sign in with Apple + Google OAuth (`lib/oauth.ts`; Apple iOS-only).
 - [x] `profiles` row auto-created on signup (trigger in migration 0001).
 - [x] Catalog CRUD: create/edit/delete specimens with photos (EXIF stripped before upload).
-- [x] Home dashboard: running collection value (SUM of est_value_cents), recent activity feed.
-- [x] Free-tier catalog cap (25 specimens) enforced server-side (RLS + count check) with
-      upgrade prompt in UI.
-- [x] Account settings: update name/email (re-verify), change password, delete account
-      (soft-delete + 30-day purge — App Store requirement), sign out (token revocation).
+- [x] Home dashboard: running collection value, recent activity, pending rating prompts.
+- [x] Free-tier catalog cap (25) enforced server-side + upgrade prompt in UI.
+- [x] Account settings: name/email, change password link, soft-delete + 30-day purge, sign out.
+- [x] Auth route guard on tab stack; push token registration on login.
 
 ## Phase 2 — Visual Check (AI, quota-gated; no payments yet)
-- [x] `visual-check` Edge Function: image → Anthropic vision prompt → structured
-      `result_json` (species guess, confidence, red flags, price-range placeholder).
-- [x] Quota logic: free = 3 checks/month; consume monthly allowance first, then credits.
-- [x] Rate-limit the endpoint; log every check to `visual_checks`.
-- [x] Result screen: "Most likely / Watch out for / price range" + mandatory second-opinion
-      disclaimer + "Save to catalog" (creates specimen prefilled from result).
-- [x] Legal review pass on disclaimer copy before public rollout.
-  - *Approved copy in `docs/LEGAL_DISCLAIMER.md`; enforced via `VisualCheckDisclaimer`.*
+- [x] `visual-check` Edge Function → Anthropic vision → structured `result_json`.
+- [x] Quota: free 3/mo then credits; `consume_check` + **refund on AI failure**.
+- [x] Rate-limit (6/min) + log every check to `visual_checks`.
+- [x] Result UI: Most likely / Watch out / price range + `VisualCheckDisclaimer` + Save to catalog.
+- [x] Camera + library pickers; check history / detail screens.
+- [x] Legal copy approved in `docs/LEGAL_DISCLAIMER.md`.
 
 ## Phase 3 — Monetization (RevenueCat / IAP)
-- [x] App Store Connect + Play Console: create app records, `plus` subscription product
-      ($7/mo, 1-month free intro offer), consumable credit packs (5/$2.99, 15/$6.99, 40/$14.99).
-  - *Product catalog locked in `config/iap-products.json`; console steps in `docs/IAP_PRODUCTS.md`.*
-- [x] RevenueCat project: entitlement `plus`, offerings, attach store products.
-  - *Offering/package map in `config/iap-products.json` + `docs/IAP_PRODUCTS.md`.*
-- [x] `lib/purchases.ts`: configure SDK, purchase + restore flows.
-- [x] `revenuecat-webhook` Edge Function: entitlement changes → `profiles.plan` +
-      `subscriptions`; consumable purchases → `credit_ledger` (+N).
-- [x] Paywall screen wired to offerings; gates: free = 3 checks + 25 specimens; plus = unlimited.
-- [x] Cancel flow deep-links to platform subscription management; state reflected via webhook.
+- [x] Product catalog locked in `config/iap-products.json` + `docs/IAP_PRODUCTS.md`.
+- [x] `lib/purchases.ts`: configure SDK, purchase + restore (no-ops until real RC keys).
+- [x] `revenuecat-webhook` → `profiles.plan` / `subscriptions` / `credit_ledger`.
+- [x] Paywall wired to offerings; DB-backed feature gates (never client purchase state alone).
+- [x] Cancel / manage subscription deep-links to App Store / Play (`account/billing`).
+- [ ] **Console:** create App Store Connect + Play products and attach in RevenueCat (manual).
 
 ## Phase 4 — Marketplace + Escrow (Stripe Connect)
-- [x] Seller onboarding via Stripe Connect Express; gate listing creation on
-      `connect_onboarding_status = 'active'` (`account.updated` webhook).
-- [x] Listings CRUD + marketplace feed + listing detail.
-- [x] `create-order`: PaymentIntent (manual capture, destination charge, platform fee) →
-      order `pending` → on authorization `escrow_held`.
-- [x] Shipping: seller adds tracking; buyer confirms delivery OR 7-day auto-confirm after
-      tracked delivery → `confirm-delivery` captures + transfers → `released`.
-- [x] Disputes → human review queue; refund cancels uncaptured intent or refunds captured.
-  - *`dispute_queue` table + Stripe webhook enqueue; refund/dispute status on orders.*
-- [x] Ratings: one per completed order (accuracy: as_described / minor / not_as_described,
-      photo_match) → recompute seller credibility score (recency-weighted rolling average).
-- [x] Seller tiers surfaced as badges: Self-Certified → Documented Sourcing → Lab-Verified
-      (tier upgrades require ops documentation-review flag, never pay-to-play).
+- [x] Seller onboarding via Stripe Connect Express (`create-connect-account` + webhook).
+- [x] Listings CRUD + photo upload + marketplace grid + listing detail.
+- [x] `create-order`: PaymentIntent (manual capture, destination charge, fee) + duplicate guard.
+- [x] Checkout presents **Stripe PaymentSheet** when publishable key is configured.
+- [x] Shipping: `add-tracking` sets `shipped_at`; buyer `confirm-delivery` captures.
+- [x] 7-day auto-confirm via `reconcile` (uses `shipped_at`).
+- [x] Disputes → `dispute_queue`; refunds/disputes update order status.
+- [x] Ratings → credibility score; seller tier badges in UI.
+- [x] Listings marked `sold` on escrow authorization / capture.
+- [ ] **Console:** enable Stripe Connect Express + webhook endpoint (manual).
 
 ## Phase 5 — Launch hardening
-- [x] EAS Build profiles (dev / preview / production) + EAS Submit for both stores.
-- [x] Deep-link scheme `sage://` tested for Stripe onboarding return + password reset.
-- [x] Push notifications (order events, rating prompts) via Expo Notifications.
-- [x] Privacy: App Privacy labels / Data safety form (photos, purchase data, no GPS retained).
-- [x] Reconciliation job: unbilled/failed webhook events; credit balance audit
-      (SUM(credit_ledger) vs profile cache).
-  - *`reconcile` Edge Function + `webhook_events` / SQL audits — see `docs/RECONCILIATION.md`.*
-- [x] App review prep: demo account, IAP review notes, "second opinion" disclaimer visible.
-  - *`docs/APP_REVIEW.md`, `supabase/seed/demo_reviewer.sql`, disclaimer component on Check results.*
+- [x] EAS Build profiles (dev / preview / production) + Submit config (`eas.json`).
+- [x] Deep-link scheme `sage://` for OAuth callback, password reset, Connect return, checkout.
+- [x] Push: Expo permission + `push_tokens` table / `upsert_push_token` RPC.
+- [x] Privacy notes in `docs/APP_REVIEW.md` (photos, purchases, no GPS retained).
+- [x] `reconcile` job: credit audit, stuck webhooks archive, auto-confirm, **account purge**.
+- [x] App review prep docs + `supabase/seed/demo_reviewer.sql` + disclaimer on results.
+- [x] Prototype chrome: dark onboarding, pill CTAs, center Visual Check FAB, mineral swatches.
+- [ ] **Ops:** schedule hourly POST to `/functions/v1/reconcile` with cron secret.
+- [ ] **Ops:** send Expo push messages from Edge Functions on order/rating events (token storage ready).
+
+## Docs map
+See README “Docs map” — `STORE_SETUP`, `IAP_PRODUCTS`, `LEGAL_DISCLAIMER`, `APP_REVIEW`, `RECONCILIATION`.
