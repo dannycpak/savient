@@ -2,7 +2,8 @@ import { useCallback, useState } from "react";
 import { FlatList, Pressable, Text, View } from "react-native";
 import { router, useFocusEffect } from "expo-router";
 import { supabase } from "@/lib/supabase";
-import { Screen, Card, Eyebrow } from "@/components/ui";
+import { Screen, Card, Button, Eyebrow } from "@/components/ui";
+import { SellerBadge } from "@/components/SellerBadge";
 import { space, type } from "@/constants/theme";
 
 type Listing = {
@@ -38,17 +39,18 @@ export default function Market() {
         keyExtractor={(r) => r.id}
         contentContainerStyle={{ gap: space.sm, paddingBottom: space.xl }}
         ListHeaderComponent={
-          <View style={{ marginBottom: space.md, gap: space.xs }}>
+          <View style={{ marginBottom: space.md, gap: space.sm }}>
             <Text style={type.h1}>Marketplace</Text>
             <Text style={type.caption}>
-              Listings from sellers with credibility scores. Escrow shipping in Phase 4.
+              Credibility-backed listings. Payment held in escrow until delivery.
             </Text>
+            <Button label="Sell on Sage" variant="ghost" onPress={() => router.push("/seller/onboarding")} />
           </View>
         }
         ListEmptyComponent={
           <Card>
             <Text style={type.body}>
-              No active listings yet. Seller onboarding and escrow ship in Phase 4.
+              No active listings yet. Complete Stripe Connect onboarding to publish.
             </Text>
           </Card>
         }
@@ -61,11 +63,10 @@ export default function Market() {
                 <Text style={type.caption}>{item.locality ?? "Locality unknown"}</Text>
                 <Text style={type.body}>${(item.price_cents / 100).toLocaleString()}</Text>
               </View>
-              {item.sellers?.credibility_score != null && (
-                <Text style={type.caption}>
-                  Seller {item.sellers.credibility_score.toFixed(1)}/10 · {item.sellers.tier}
-                </Text>
-              )}
+              <SellerBadge
+                score={item.sellers?.credibility_score}
+                tier={item.sellers?.tier}
+              />
             </Card>
           </Pressable>
         )}
