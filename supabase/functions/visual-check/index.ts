@@ -11,8 +11,14 @@ Return ONLY valid JSON with this shape:
 }
 Never claim certified authentication. Flag dye/treatment/implausible locality or price concerns.`;
 
+const MAX_BYTES = 10 * 1024 * 1024;
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
+
+  let consumed: string | null = null;
+  let userId: string | null = null;
+  let admin: ReturnType<typeof createClient> | null = null;
 
   try {
     const authHeader = req.headers.get("Authorization");
@@ -23,14 +29,21 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_ANON_KEY")!,
       { global: { headers: { Authorization: authHeader } } },
     );
-    const admin = createClient(
+    admin = createClient(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
     );
 
     const { data: userData, error: userErr } = await supabase.auth.getUser();
     if (userErr || !userData.user) return json({ error: "Unauthorized" }, 401);
-    const userId = userData.user.id;
+    userId = userData.user.id;
+
+    const { data: profile } = await admin
+      .from("profiles")
+      .select("deleted_at")
+      .eq("id", userId)
+      .single();
+    if (profile?.deleted_at) return json({ error: "Account deleted" }, 403);
 
     const { image_path } = await req.json();
     if (!image_path || typeof image_path !== "string") {
@@ -40,21 +53,35 @@ Deno.serve(async (req) => {
       return json({ error: "Invalid path" }, 403);
     }
 
-    // Quota gate
-    const { data: consumed, error: consumeErr } = await admin.rpc("consume_check", {
+    const { data: allowed } = await admin.rpc("rate_limit_visual_check", {
+      p_user_id: userId,
+    });
+    if (allowed === false) {
+      return json({ error: "Too many checks. Try again in a few minutes." }, 429);
+    }
+
+    // Quota gate (refunded below if AI fails)
+    const { data: consumedVal, error: consumeErr } = await admin.rpc("consume_check", {
       p_user_id: userId,
     });
     if (consumeErr) {
       if (consumeErr.message?.includes("NO_CHECKS")) {
         return json({ error: "Out of checks", paywall: true }, 402);
       }
+      if (consumeErr.message?.includes("BILLING_ISSUE")) {
+        return json({ error: "Subscription billing issue — checks paused until resolved." }, 402);
+      }
       return json({ error: consumeErr.message }, 400);
     }
+    consumed = consumedVal as string;
 
     const { data: signed, error: signErr } = await admin.storage
       .from("check-uploads")
       .createSignedUrl(image_path, 120);
-    if (signErr || !signed?.signedUrl) return json({ error: "Image not found" }, 404);
+    if (signErr || !signed?.signedUrl) {
+      await admin.rpc("refund_check", { p_user_id: userId, p_consumed: consumed });
+      return json({ error: "Image not found" }, 404);
+    }
 
     const { data: checkRow, error: insertErr } = await admin
       .from("visual_checks")
@@ -67,13 +94,40 @@ Deno.serve(async (req) => {
       })
       .select("id")
       .single();
-    if (insertErr) return json({ error: insertErr.message }, 500);
+    if (insertErr) {
+      await admin.rpc("refund_check", { p_user_id: userId, p_consumed: consumed });
+      return json({ error: insertErr.message }, 500);
+    }
 
     const anthropicKey = Deno.env.get("ANTHROPIC_API_KEY");
-    if (!anthropicKey) return json({ error: "AI not configured" }, 500);
+    if (!anthropicKey) {
+      await admin.rpc("refund_check", { p_user_id: userId, p_consumed: consumed });
+      await admin
+        .from("visual_checks")
+        .update({ status: "failed", completed_at: new Date().toISOString() })
+        .eq("id", checkRow.id);
+      return json({ error: "AI not configured" }, 500);
+    }
 
     const imgRes = await fetch(signed.signedUrl);
     const buf = new Uint8Array(await imgRes.arrayBuffer());
+    if (buf.byteLength === 0 || buf.byteLength > MAX_BYTES) {
+      await admin.rpc("refund_check", { p_user_id: userId, p_consumed: consumed });
+      await admin
+        .from("visual_checks")
+        .update({ status: "failed", completed_at: new Date().toISOString() })
+        .eq("id", checkRow.id);
+      return json({ error: "Invalid image size" }, 400);
+    }
+
+    const contentType = imgRes.headers.get("content-type") ?? "image/jpeg";
+    const mediaType =
+      contentType.includes("png")
+        ? "image/png"
+        : contentType.includes("webp")
+          ? "image/webp"
+          : "image/jpeg";
+
     let binary = "";
     for (const b of buf) binary += String.fromCharCode(b);
     const b64 = btoa(binary);
@@ -95,7 +149,7 @@ Deno.serve(async (req) => {
             content: [
               {
                 type: "image",
-                source: { type: "base64", media_type: "image/jpeg", data: b64 },
+                source: { type: "base64", media_type: mediaType, data: b64 },
               },
               {
                 type: "text",
@@ -108,6 +162,7 @@ Deno.serve(async (req) => {
     });
 
     if (!aiRes.ok) {
+      await admin.rpc("refund_check", { p_user_id: userId, p_consumed: consumed });
       await admin
         .from("visual_checks")
         .update({ status: "failed", completed_at: new Date().toISOString() })
@@ -143,6 +198,13 @@ Deno.serve(async (req) => {
 
     return json({ id: checkRow.id, result });
   } catch (e) {
+    if (admin && userId && consumed) {
+      try {
+        await admin.rpc("refund_check", { p_user_id: userId, p_consumed: consumed });
+      } catch {
+        /* best-effort */
+      }
+    }
     return json({ error: e instanceof Error ? e.message : "Unknown error" }, 500);
   }
 });

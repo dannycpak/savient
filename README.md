@@ -16,6 +16,7 @@ Expo Router app shell in the approved design language.
    migration, sets secrets, deploys functions).
 4. `cp .env.example .env`, fill the `EXPO_PUBLIC_` values, then `npx expo start`.
    Note: RevenueCat and Apple Sign-In need a **dev client** (`npx expo run:ios`), not Expo Go.
+5. For store submission steps (EAS, IAP products, review notes), see `docs/STORE_SUBMISSION.md`.
 
 ## What's already decided (don't relitigate in Cursor)
 

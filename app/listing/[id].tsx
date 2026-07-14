@@ -69,7 +69,11 @@ export default function ListingDetail() {
           />
         </Card>
 
-        <Button label="Buy" onPress={() => router.push(`/checkout/${row.id}`)} />
+        <Button
+          label="Buy (coming soon)"
+          variant="ghost"
+          onPress={() => router.push("/(tabs)/market")}
+        />
       </ScrollView>
     </Screen>
   );

@@ -2,8 +2,9 @@
 
 Sage is a mobile-first mineral-collector app: one Expo (React Native) codebase for iOS/Android
 plus a Supabase backend (Postgres + RLS in `supabase/migrations/`, Deno Edge Functions in
-`supabase/functions/`). See `README.md`, `ARCHITECTURE.md`, `docs/BACKEND_SPEC.md`, and `TODO.md`
-for product/architecture detail, and `.cursorrules` for non-negotiable billing/security rules.
+`supabase/functions/`). See `README.md`, `ARCHITECTURE.md`, `docs/BACKEND_SPEC.md`,
+`docs/STORE_SUBMISSION.md`, and `TODO.md` for product/architecture detail, and `.cursorrules`
+for non-negotiable billing/security rules.
 
 ## Cursor Cloud specific instructions
 
@@ -15,8 +16,9 @@ Standard commands live in `package.json` scripts; run them with `npm run <script
   (no eslint dependency, no eslint config in the repo), so it fails with `eslint: not found`.
   Lint is not usable as-is; do not treat its failure as a regression.
 - **Env vars:** the app reads `EXPO_PUBLIC_SUPABASE_URL` / `EXPO_PUBLIC_SUPABASE_ANON_KEY` (and
-  optional RevenueCat keys) at boot. Copy `.env.example` → `.env` and fill values. Without a real
-  Supabase project the UI still renders, but any auth/network call (login, signup) will hang/fail.
+  optional RevenueCat / Google OAuth keys) at boot. Copy `.env.example` → `.env` and fill values.
+  Without a real Supabase project the UI still renders, but any auth/network call (login, signup)
+  will hang/fail.
 
 ### Running the app (GUI testing in the cloud VM)
 
@@ -29,11 +31,21 @@ Standard commands live in `package.json` scripts; run them with `npm run <script
   (`ExpoSecureStore.default.getValueWithKeyAsync is not a function`). To render/test in a browser you
   must temporarily shim SecureStore with a `localStorage`-backed adapter when `Platform.OS === "web"`.
   Treat this as a throwaway testing aid — do not commit it (the app targets native, not web).
+- **Native target:** IAP + Sign in with Apple need a **dev client** (`npx expo run:ios` /
+  `npx expo run:android`), not Expo Go.
 
 ### Supabase backend
 
-- Edge Functions (`supabase/functions/*`) and the schema migration require the Supabase CLI plus
-  either a linked cloud project or a local Docker stack; neither is installed by default.
-- `scripts/setup.sh` is **interactive** (prompts for Anthropic/Stripe/RevenueCat secrets and
+- Apply migrations `0001` + `0002` (storage buckets/policies). Edge Functions require the Supabase
+  CLI plus either a linked cloud project or a local Docker stack; neither is installed by default.
+- `scripts/setup.sh` is **interactive** (prompts for Anthropic/Stripe/RevenueCat/CRON secrets and
   `supabase link`) — it cannot run unattended. Secret-bearing values belong only in Edge Function
   env, never in the Expo app.
+- Schedule `purge-deleted-accounts` daily with `CRON_SECRET` (App Store 30-day account deletion).
+
+### Store submission
+
+- Marketplace Buy / Checkout are gated as “Coming soon” for the first submission. Do not un-gate
+  until Phase 4 (Connect + PaymentSheet) is complete.
+- Follow `docs/STORE_SUBMISSION.md`. Placeholders `REPLACE_WITH_*` in `app.json` / `eas.json` must
+  be filled before `eas build` / `eas submit`.

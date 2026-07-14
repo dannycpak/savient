@@ -22,9 +22,10 @@ Deno.serve(async (req) => {
   if (!appUserId) return json({ error: "missing app_user_id" }, 400);
 
   try {
-    if (["INITIAL_PURCHASE", "RENEWAL"].includes(type)) {
-      const entitlement = event.entitlement_ids?.[0] ?? "plus";
-      if (entitlement === "plus" || (event.entitlement_ids ?? []).includes("plus")) {
+    if (["INITIAL_PURCHASE", "RENEWAL", "UNCANCELLATION", "PRODUCT_CHANGE"].includes(type)) {
+      const entitlementIds: string[] = event.entitlement_ids ?? [];
+      const entitlement = entitlementIds[0] ?? "plus";
+      if (entitlement === "plus" || entitlementIds.includes("plus")) {
         await admin.from("profiles").update({ plan: "plus" }).eq("id", appUserId);
         await admin.from("subscriptions").upsert({
           user_id: appUserId,
@@ -34,10 +35,26 @@ Deno.serve(async (req) => {
           renews_at: event.expiration_at_ms
             ? new Date(event.expiration_at_ms).toISOString()
             : null,
-          store: event.store === "APP_STORE" ? "app_store" : event.store === "PLAY_STORE" ? "play" : null,
+          store:
+            event.store === "APP_STORE"
+              ? "app_store"
+              : event.store === "PLAY_STORE"
+                ? "play"
+                : null,
           updated_at: new Date().toISOString(),
         });
       }
+    }
+
+    if (type === "BILLING_ISSUE") {
+      // Keep profiles.plan = plus for grace UX messaging, but pause checks via status.
+      await admin.from("subscriptions").upsert({
+        user_id: appUserId,
+        rc_app_user_id: appUserId,
+        rc_entitlement: "plus",
+        status: "billing_issue",
+        updated_at: new Date().toISOString(),
+      });
     }
 
     if (["CANCELLATION", "EXPIRATION"].includes(type)) {
@@ -52,11 +69,11 @@ Deno.serve(async (req) => {
     }
 
     if (type === "NON_RENEWING_PURCHASE") {
-      const productId = (event.product_id as string) ?? "";
+      const productId = ((event.product_id as string) ?? "").toLowerCase();
       let credits = 0;
-      if (productId.includes("5") || productId.includes("credits_5")) credits = 5;
-      else if (productId.includes("15") || productId.includes("credits_15")) credits = 15;
-      else if (productId.includes("40") || productId.includes("credits_40")) credits = 40;
+      if (productId.includes("credits_40") || productId.includes("40")) credits = 40;
+      else if (productId.includes("credits_15") || productId.includes("15")) credits = 15;
+      else if (productId.includes("credits_5") || productId.includes("5")) credits = 5;
       else credits = Number(event.purchased_quantity ?? 0) || 0;
 
       const tx = event.transaction_id as string | undefined;
@@ -73,7 +90,6 @@ Deno.serve(async (req) => {
       }
     }
 
-    // BILLING_ISSUE: leave plan; visual-check can soft-pause separately if needed
     return json({ ok: true });
   } catch (e) {
     return json({ error: e instanceof Error ? e.message : "error" }, 500);
