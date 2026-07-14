@@ -3,9 +3,8 @@ import { useState } from "react";
 import { Alert, Image, Pressable, ScrollView, Text, View } from "react-native";
 import { router } from "expo-router";
 import * as ImagePicker from "expo-image-picker";
-import { supabase } from "@/lib/supabase";
 import { api, ApiError, type VisualCheckResult } from "@/lib/api";
-import { stripExifAndResize } from "@/lib/images";
+import { uploadPrivateImage } from "@/lib/photos";
 import { Screen, Card, Button, Eyebrow } from "@/components/ui";
 import { VISUAL_CHECK_DISCLAIMER } from "@/constants/copy";
 import { colors, radius, space, type } from "@/constants/theme";
@@ -15,8 +14,34 @@ export default function Check() {
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState<VisualCheckResult | null>(null);
 
-  const pick = async () => {
-    const res = await ImagePicker.launchImageLibraryAsync({ quality: 1 });
+  const chooseSource = () => {
+    Alert.alert("Add a photo", "Choose a source for Visual Check.", [
+      { text: "Cancel", style: "cancel" },
+      { text: "Camera", onPress: () => pick("camera") },
+      { text: "Photo library", onPress: () => pick("library") },
+    ]);
+  };
+
+  const pick = async (source: "camera" | "library") => {
+    if (source === "camera") {
+      const perm = await ImagePicker.requestCameraPermissionsAsync();
+      if (!perm.granted) {
+        Alert.alert("Camera permission needed", "Enable camera access in Settings to photograph specimens.");
+        return;
+      }
+      const res = await ImagePicker.launchCameraAsync({ quality: 1 });
+      if (!res.canceled) {
+        setUri(res.assets[0].uri);
+        setResult(null);
+      }
+      return;
+    }
+    const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!perm.granted) {
+      Alert.alert("Photos permission needed", "Enable photo library access to upload specimen images.");
+      return;
+    }
+    const res = await ImagePicker.launchImageLibraryAsync({ quality: 1, mediaTypes: ["images"] });
     if (!res.canceled) {
       setUri(res.assets[0].uri);
       setResult(null);
@@ -27,26 +52,18 @@ export default function Check() {
     if (!uri) return;
     setBusy(true);
     try {
-      const clean = await stripExifAndResize(uri);
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (!user) throw new Error("Not signed in");
-      const path = `${user.id}/${Date.now()}.jpg`;
-      const file = await fetch(clean).then((r) => r.arrayBuffer());
-      const { error: upErr } = await supabase.storage
-        .from("check-uploads")
-        .upload(path, file, { contentType: "image/jpeg" });
-      if (upErr) throw upErr;
+      const path = await uploadPrivateImage("check-uploads", uri);
       setResult(await api.visualCheck(path));
     } catch (e) {
       if (e instanceof ApiError && e.status === 402) {
-        Alert.alert("Out of checks", "You've used this month's free checks.", [
+        Alert.alert("Out of checks", e.message || "You've used this month's free checks.", [
           { text: "Not now" },
           { text: "Get more", onPress: () => router.push("/paywall") },
         ]);
+      } else if (e instanceof ApiError && e.status === 429) {
+        Alert.alert("Slow down", e.message);
       } else {
-        Alert.alert("Check failed", "Something went wrong. Try again.");
+        Alert.alert("Check failed", e instanceof Error ? e.message : "Something went wrong. Try again.");
       }
     } finally {
       setBusy(false);
@@ -59,7 +76,7 @@ export default function Check() {
   return (
     <Screen style={{ padding: 0 }}>
       <ScrollView contentContainerStyle={{ padding: space.lg, gap: space.md }}>
-        <Pressable onPress={pick}>
+        <Pressable onPress={chooseSource}>
           {uri ? (
             <Image
               source={{ uri }}
@@ -68,7 +85,7 @@ export default function Check() {
           ) : (
             <Card style={{ height: 260, alignItems: "center", justifyContent: "center" }}>
               <Text style={type.h2}>Tap to add a photo</Text>
-              <Text style={type.caption}>Sharp, well-lit, neutral background works best.</Text>
+              <Text style={type.caption}>Camera or library · EXIF/GPS stripped before upload.</Text>
             </Card>
           )}
         </Pressable>

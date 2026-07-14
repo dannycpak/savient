@@ -19,7 +19,17 @@
       "usesAppleSignIn": true,
       "infoPlist": {
         "NSCameraUsageDescription": "Sage uses the camera to photograph specimens for your catalog and Visual Checks.",
-        "NSPhotoLibraryUsageDescription": "Sage uses your photo library to add specimen photos to your catalog and Visual Checks."
+        "NSPhotoLibraryUsageDescription": "Sage uses your photo library to add specimen photos to your catalog and Visual Checks.",
+        "NSPhotoLibraryAddUsageDescription": "Sage saves specimen photos you choose to add to your catalog.",
+        "ITSAppUsesNonExemptEncryption": false
+      },
+      "privacyManifests": {
+        "NSPrivacyAccessedAPITypes": [
+          {
+            "NSPrivacyAccessedAPIType": "NSPrivacyAccessedAPICategoryUserDefaults",
+            "NSPrivacyAccessedAPITypeReasons": ["CA92.1"]
+          }
+        ]
       }
     },
     "android": {
@@ -40,13 +50,24 @@
       [
         "expo-image-picker",
         {
-          "photosPermission": "Sage needs photo access to add specimen images."
+          "photosPermission": "Sage needs photo access to add specimen images.",
+          "cameraPermission": "Sage needs camera access to photograph specimens."
         }
       ],
-      "expo-image"
+      "expo-image",
+      "expo-font"
     ],
     "experiments": {
       "typedRoutes": true
-    }
+    },
+    "extra": {
+      "router": {
+        "origin": false
+      },
+      "eas": {
+        "projectId": "REPLACE_WITH_EAS_PROJECT_ID"
+      }
+    },
+    "owner": "REPLACE_WITH_EXPO_OWNER"
   }
 }
