@@ -1,10 +1,10 @@
 import { useState } from "react";
 import { Pressable, Text, View } from "react-native";
 import { router } from "expo-router";
-import * as SecureStore from "expo-secure-store";
 import { Screen, Button } from "@/components/ui";
 import { Swatch } from "@/components/Swatch";
 import { COPY } from "@/constants/copy";
+import { appStorage } from "@/lib/storage";
 import { colors, space, type } from "@/constants/theme";
 
 export default function Onboarding() {
@@ -13,7 +13,7 @@ export default function Onboarding() {
   const last = step === COPY.onboarding.length - 1;
 
   const finish = async () => {
-    await SecureStore.setItemAsync("sage.onboarding.done", "1");
+    await appStorage.setItem("sage.onboarding.done", "1");
     router.replace("/(auth)/login");
   };
 
