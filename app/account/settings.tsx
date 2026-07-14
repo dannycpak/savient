@@ -1,9 +1,9 @@
 import { useCallback, useState } from "react";
-import { Alert, ScrollView, Text } from "react-native";
+import { Alert, Pressable, ScrollView, Text, View } from "react-native";
 import { router, useFocusEffect } from "expo-router";
 import { supabase } from "@/lib/supabase";
-import { Screen, Button, Field } from "@/components/ui";
-import { space, type } from "@/constants/theme";
+import { Screen, Button, SoftInput, MenuRow } from "@/components/ui";
+import { colors } from "@/constants/theme";
 
 export default function AccountSettings() {
   const [name, setName] = useState("");
@@ -24,7 +24,10 @@ export default function AccountSettings() {
   const save = async () => {
     setBusy(true);
     try {
-      const { error } = await supabase.from("profiles").update({ display_name: name }).eq("id", (await supabase.auth.getUser()).data.user!.id);
+      const { error } = await supabase
+        .from("profiles")
+        .update({ display_name: name })
+        .eq("id", (await supabase.auth.getUser()).data.user!.id);
       if (error) throw error;
       if (email) {
         const { error: e2 } = await supabase.auth.updateUser({ email });
@@ -45,11 +48,6 @@ export default function AccountSettings() {
     });
     if (error) Alert.alert("Failed", error.message);
     else Alert.alert("Check your inbox", "Use the link to set a new password.");
-  };
-
-  const signOut = async () => {
-    await supabase.auth.signOut({ scope: "global" });
-    router.replace("/(auth)/login");
   };
 
   const deleteAccount = () => {
@@ -75,15 +73,73 @@ export default function AccountSettings() {
   };
 
   return (
-    <Screen style={{ padding: 0 }}>
-      <ScrollView contentContainerStyle={{ padding: space.lg, gap: space.md }}>
-        <Text style={type.h1}>Account</Text>
-        <Field label="Full name" value={name} onChangeText={setName} autoCapitalize="words" />
-        <Field label="Email" value={email} onChangeText={setEmail} keyboardType="email-address" />
-        <Button label="Save changes" onPress={save} loading={busy} />
-        <Button label="Change password" variant="ghost" onPress={changePassword} />
-        <Button label="Sign out" variant="ghost" onPress={signOut} />
-        <Button label="Delete account" variant="danger" onPress={deleteAccount} />
+    <Screen style={{ paddingHorizontal: 0 }}>
+      <ScrollView contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 8, paddingBottom: 36, gap: 16 }}>
+        <Pressable
+          onPress={() => router.back()}
+          style={{
+            alignSelf: "flex-start",
+            height: 36,
+            paddingHorizontal: 14,
+            borderRadius: 18,
+            borderWidth: 1,
+            borderColor: colors.border,
+            backgroundColor: colors.white,
+            justifyContent: "center",
+          }}
+        >
+          <Text style={{ fontSize: 14, fontFamily: "InstrumentSans_500Medium" }}>← Profile</Text>
+        </Pressable>
+
+        <Text style={{ fontFamily: "InstrumentSerif_400Regular", fontSize: 30, color: colors.ink }}>Account</Text>
+
+        <View
+          style={{
+            backgroundColor: colors.white,
+            borderWidth: 1,
+            borderColor: colors.border,
+            borderRadius: 18,
+            padding: 18,
+            gap: 14,
+          }}
+        >
+          <View style={{ gap: 6 }}>
+            <Text style={{ fontSize: 12.5, fontFamily: "InstrumentSans_600SemiBold", color: colors.muted, textTransform: "uppercase", letterSpacing: 0.4 }}>
+              Full name
+            </Text>
+            <SoftInput
+              value={name}
+              onChangeText={setName}
+              autoCapitalize="words"
+              style={{ backgroundColor: "#FBFAF6", height: 50 }}
+            />
+          </View>
+          <View style={{ gap: 6 }}>
+            <Text style={{ fontSize: 12.5, fontFamily: "InstrumentSans_600SemiBold", color: colors.muted, textTransform: "uppercase", letterSpacing: 0.4 }}>
+              Email
+            </Text>
+            <SoftInput
+              value={email}
+              onChangeText={setEmail}
+              keyboardType="email-address"
+              style={{ backgroundColor: "#FBFAF6", height: 50 }}
+            />
+          </View>
+          <Button label="Save changes" onPress={save} loading={busy} style={{ minHeight: 48 }} />
+        </View>
+
+        <View
+          style={{
+            backgroundColor: colors.white,
+            borderWidth: 1,
+            borderColor: colors.border,
+            borderRadius: 16,
+            overflow: "hidden",
+          }}
+        >
+          <MenuRow label="Change password" onPress={changePassword} />
+          <MenuRow label="Delete account" danger last onPress={deleteAccount} />
+        </View>
       </ScrollView>
     </Screen>
   );
