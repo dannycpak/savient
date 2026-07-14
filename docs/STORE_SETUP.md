@@ -1,33 +1,25 @@
-# Sage — Store & vendor setup (manual)
+# Sage — Store & vendor setup (manual console clicks)
 
-These steps require your accounts — they cannot be automated from this repo alone.
+Repo artifacts are complete; these steps apply them in vendor dashboards.
 
 ## Supabase
 1. Create a project → copy URL + anon key into `.env`.
 2. Enable Auth providers: Email, Apple, Google.
 3. Auth redirect URLs: `sage://auth/callback`, `sage://reset-password`.
-4. Run `./scripts/setup.sh` (or `supabase db push` + function deploys).
-5. Set Edge secrets: `ANTHROPIC_API_KEY`, `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `REVENUECAT_WEBHOOK_AUTH`.
+4. Run `./scripts/setup.sh` (migrations, secrets, function deploys including `reconcile`).
+5. Schedule hourly reconcile — `docs/RECONCILIATION.md`.
 
 ## RevenueCat / IAP (digital goods only)
-1. App Store Connect + Play Console: create app records.
-2. Products:
-   - Subscription `plus` — $7/mo, 1-month free intro
-   - Consumables: 5/$2.99 · 15/$6.99 · 40/$14.99
-3. RevenueCat: entitlement `plus`, offerings, attach store products.
-4. Webhook → `.../functions/v1/revenuecat-webhook` with Bearer = `REVENUECAT_WEBHOOK_AUTH`.
-5. Put public SDK keys in `.env` (`EXPO_PUBLIC_REVENUECAT_*`).
+Follow **`docs/IAP_PRODUCTS.md`** using IDs in **`config/iap-products.json`**:
+- `sage_plus_monthly` ($7/mo, 1-month free)
+- `sage_credits_5` / `_15` / `_40`
+- Entitlement `plus`, offering `default`
 
 ## Stripe Connect (physical goods only)
 1. Enable Connect Express.
-2. Webhook → `.../functions/v1/stripe-webhook` for:
-   `account.updated`, `payment_intent.amount_capturable_updated`,
-   `payment_intent.succeeded`, `charge.refunded`, `charge.dispute.created`.
-3. Put publishable key in `.env` (`EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY`).
+2. Webhook → `.../functions/v1/stripe-webhook`.
+3. Publishable key → `EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY`.
 
-## Privacy / app review
-- Photos: processed for catalog + Visual Check; EXIF/GPS stripped client-side; no location retained.
-- Account deletion: soft-delete + 30-day purge (`soft_delete_account`).
-- Sign in with Apple required because Google is offered.
-- Demo account + IAP review notes before submission.
-- Visual Check disclaimer must remain visible on every result screen.
+## App review
+Follow **`docs/APP_REVIEW.md`** (demo account, IAP notes, privacy).  
+Disclaimer: **`docs/LEGAL_DISCLAIMER.md`**.

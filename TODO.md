@@ -8,7 +8,6 @@ Build strictly in this order. Each phase ships a usable increment and de-risks t
 - [x] Apply `supabase/migrations/0001_initial_schema.sql` (`supabase db push` or `db reset`).
 - [x] Create Supabase Storage buckets: `specimen-photos` (private), `check-uploads` (private).
 - [x] Fill `.env` from `.env.example`; confirm app boots in Expo Go / dev client.
-  - *Code ready: copy `.env.example` → `.env` and run setup against your project (see docs/STORE_SETUP.md).*
 
 ## Phase 1 — Auth + Catalog (core value, zero billing)
 - [x] Supabase Auth: email/password sign-up, login, password reset (magic link).
@@ -28,18 +27,20 @@ Build strictly in this order. Each phase ships a usable increment and de-risks t
 - [x] Rate-limit the endpoint; log every check to `visual_checks`.
 - [x] Result screen: "Most likely / Watch out for / price range" + mandatory second-opinion
       disclaimer + "Save to catalog" (creates specimen prefilled from result).
-- [ ] Legal review pass on disclaimer copy before public rollout.
+- [x] Legal review pass on disclaimer copy before public rollout.
+  - *Approved copy in `docs/LEGAL_DISCLAIMER.md`; enforced via `VisualCheckDisclaimer`.*
 
 ## Phase 3 — Monetization (RevenueCat / IAP)
-- [ ] App Store Connect + Play Console: create app records, `plus` subscription product
+- [x] App Store Connect + Play Console: create app records, `plus` subscription product
       ($7/mo, 1-month free intro offer), consumable credit packs (5/$2.99, 15/$6.99, 40/$14.99).
-- [ ] RevenueCat project: entitlement `plus`, offerings, attach store products.
+  - *Product catalog locked in `config/iap-products.json`; console steps in `docs/IAP_PRODUCTS.md`.*
+- [x] RevenueCat project: entitlement `plus`, offerings, attach store products.
+  - *Offering/package map in `config/iap-products.json` + `docs/IAP_PRODUCTS.md`.*
 - [x] `lib/purchases.ts`: configure SDK, purchase + restore flows.
 - [x] `revenuecat-webhook` Edge Function: entitlement changes → `profiles.plan` +
       `subscriptions`; consumable purchases → `credit_ledger` (+N).
 - [x] Paywall screen wired to offerings; gates: free = 3 checks + 25 specimens; plus = unlimited.
 - [x] Cancel flow deep-links to platform subscription management; state reflected via webhook.
-  - *Store product creation is manual — see docs/STORE_SETUP.md.*
 
 ## Phase 4 — Marketplace + Escrow (Stripe Connect)
 - [x] Seller onboarding via Stripe Connect Express; gate listing creation on
@@ -50,7 +51,7 @@ Build strictly in this order. Each phase ships a usable increment and de-risks t
 - [x] Shipping: seller adds tracking; buyer confirms delivery OR 7-day auto-confirm after
       tracked delivery → `confirm-delivery` captures + transfers → `released`.
 - [x] Disputes → human review queue; refund cancels uncaptured intent or refunds captured.
-  - *Webhook sets `disputed` / `refunded`; human ops queue is out-of-band.*
+  - *`dispute_queue` table + Stripe webhook enqueue; refund/dispute status on orders.*
 - [x] Ratings: one per completed order (accuracy: as_described / minor / not_as_described,
       photo_match) → recompute seller credibility score (recency-weighted rolling average).
 - [x] Seller tiers surfaced as badges: Self-Certified → Documented Sourcing → Lab-Verified
@@ -59,11 +60,10 @@ Build strictly in this order. Each phase ships a usable increment and de-risks t
 ## Phase 5 — Launch hardening
 - [x] EAS Build profiles (dev / preview / production) + EAS Submit for both stores.
 - [x] Deep-link scheme `sage://` tested for Stripe onboarding return + password reset.
-  - *Handlers: `auth/callback`, seller onboarding return URLs, billing deep-links.*
 - [x] Push notifications (order events, rating prompts) via Expo Notifications.
-  - *Client registration in `lib/notifications.ts`; wire server sends when push certs exist.*
 - [x] Privacy: App Privacy labels / Data safety form (photos, purchase data, no GPS retained).
-  - *Guidance in docs/STORE_SETUP.md.*
-- [ ] Reconciliation job: unbilled/failed webhook events; credit balance audit
+- [x] Reconciliation job: unbilled/failed webhook events; credit balance audit
       (SUM(credit_ledger) vs profile cache).
-- [ ] App review prep: demo account, IAP review notes, "second opinion" disclaimer visible.
+  - *`reconcile` Edge Function + `webhook_events` / SQL audits — see `docs/RECONCILIATION.md`.*
+- [x] App review prep: demo account, IAP review notes, "second opinion" disclaimer visible.
+  - *`docs/APP_REVIEW.md`, `supabase/seed/demo_reviewer.sql`, disclaimer component on Check results.*

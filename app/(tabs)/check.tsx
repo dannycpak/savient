@@ -7,7 +7,7 @@ import { supabase } from "@/lib/supabase";
 import { api, ApiError, type VisualCheckResult } from "@/lib/api";
 import { stripExifAndResize } from "@/lib/images";
 import { Screen, Card, Button, Eyebrow } from "@/components/ui";
-import { VISUAL_CHECK_DISCLAIMER } from "@/constants/copy";
+import { VisualCheckDisclaimer } from "@/components/VisualCheckDisclaimer";
 import { colors, radius, space, type } from "@/constants/theme";
 
 export default function Check() {
@@ -116,9 +116,7 @@ export default function Check() {
                 })
               }
             />
-            <Text style={[type.caption, { textAlign: "center" }]}>
-              {VISUAL_CHECK_DISCLAIMER}
-            </Text>
+            <VisualCheckDisclaimer />
           </>
         )}
       </ScrollView>
