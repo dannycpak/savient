@@ -1,0 +1,90 @@
+import { useCallback, useState } from "react";
+import { Alert, ScrollView, Text } from "react-native";
+import { router, useFocusEffect } from "expo-router";
+import { supabase } from "@/lib/supabase";
+import { Screen, Button, Field } from "@/components/ui";
+import { space, type } from "@/constants/theme";
+
+export default function AccountSettings() {
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  useFocusEffect(
+    useCallback(() => {
+      (async () => {
+        const { data: userData } = await supabase.auth.getUser();
+        setEmail(userData.user?.email ?? "");
+        const { data: prof } = await supabase.from("profiles").select("display_name").single();
+        setName(prof?.display_name ?? "");
+      })();
+    }, []),
+  );
+
+  const save = async () => {
+    setBusy(true);
+    try {
+      const { error } = await supabase.from("profiles").update({ display_name: name }).eq("id", (await supabase.auth.getUser()).data.user!.id);
+      if (error) throw error;
+      if (email) {
+        const { error: e2 } = await supabase.auth.updateUser({ email });
+        if (e2) throw e2;
+      }
+      Alert.alert("Saved", "Email changes require re-verification.");
+    } catch (e) {
+      Alert.alert("Save failed", e instanceof Error ? e.message : "Try again");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const changePassword = async () => {
+    if (!email) return;
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: "sage://reset-password",
+    });
+    if (error) Alert.alert("Failed", error.message);
+    else Alert.alert("Check your inbox", "Use the link to set a new password.");
+  };
+
+  const signOut = async () => {
+    await supabase.auth.signOut({ scope: "global" });
+    router.replace("/(auth)/login");
+  };
+
+  const deleteAccount = () => {
+    Alert.alert(
+      "Delete account?",
+      "Your account will be soft-deleted and purged after 30 days (App Store requirement).",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: async () => {
+            const { error } = await supabase.rpc("soft_delete_account");
+            if (error) Alert.alert("Failed", error.message);
+            else {
+              await supabase.auth.signOut({ scope: "global" });
+              router.replace("/(auth)/login");
+            }
+          },
+        },
+      ],
+    );
+  };
+
+  return (
+    <Screen style={{ padding: 0 }}>
+      <ScrollView contentContainerStyle={{ padding: space.lg, gap: space.md }}>
+        <Text style={type.h1}>Account</Text>
+        <Field label="Full name" value={name} onChangeText={setName} autoCapitalize="words" />
+        <Field label="Email" value={email} onChangeText={setEmail} keyboardType="email-address" />
+        <Button label="Save changes" onPress={save} loading={busy} />
+        <Button label="Change password" variant="ghost" onPress={changePassword} />
+        <Button label="Sign out" variant="ghost" onPress={signOut} />
+        <Button label="Delete account" variant="danger" onPress={deleteAccount} />
+      </ScrollView>
+    </Screen>
+  );
+}
