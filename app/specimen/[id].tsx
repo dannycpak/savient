@@ -5,7 +5,8 @@ import * as ImagePicker from "expo-image-picker";
 import { supabase } from "@/lib/supabase";
 import { signedPhotoUrl, uploadPrivateImage } from "@/lib/photos";
 import { Screen, Card, Button, Eyebrow, Field } from "@/components/ui";
-import { space, type } from "@/constants/theme";
+import { Swatch } from "@/components/Swatch";
+import { colors, radius, space, type } from "@/constants/theme";
 
 type Specimen = {
   id: string;
@@ -41,9 +42,7 @@ export default function SpecimenDetail() {
       setSpecies(specimen.species);
       setLocality(specimen.locality ?? "");
       setProvenance(specimen.provenance ?? "");
-      setValue(
-        specimen.est_value_cents != null ? String(specimen.est_value_cents / 100) : "",
-      );
+      setValue(specimen.est_value_cents != null ? String(specimen.est_value_cents / 100) : "");
     }
     const { data: photoRows } = await supabase
       .from("specimen_photos")
@@ -144,16 +143,11 @@ export default function SpecimenDetail() {
 
   return (
     <Screen style={{ padding: 0 }}>
-      <ScrollView contentContainerStyle={{ padding: space.lg, gap: space.md }}>
+      <ScrollView contentContainerStyle={{ padding: space.lg, gap: space.md, paddingBottom: 40 }}>
         {photos[0]?.url ? (
-          <Image
-            source={{ uri: photos[0].url }}
-            style={{ width: "100%", height: 240, borderRadius: 12 }}
-          />
+          <Image source={{ uri: photos[0].url }} style={{ width: "100%", height: 220, borderRadius: radius.lg }} />
         ) : (
-          <Card>
-            <Text style={type.caption}>No photos yet. Add one — EXIF/GPS is stripped before upload.</Text>
-          </Card>
+          <Swatch name={row.species} height={200} rounded={radius.lg} />
         )}
 
         {editing ? (
@@ -161,38 +155,53 @@ export default function SpecimenDetail() {
             <Field label="Species" value={species} onChangeText={setSpecies} autoCapitalize="words" />
             <Field label="Locality" value={locality} onChangeText={setLocality} autoCapitalize="words" />
             <Field label="Provenance" value={provenance} onChangeText={setProvenance} />
-            <Field
-              label="Estimated value (USD)"
-              value={value}
-              onChangeText={setValue}
-              keyboardType="decimal-pad"
-            />
+            <Field label="Estimated value (USD)" value={value} onChangeText={setValue} keyboardType="decimal-pad" />
             <Button label="Save changes" onPress={saveEdit} loading={busy} />
             <Button label="Cancel" variant="ghost" onPress={() => setEditing(false)} />
           </>
         ) : (
           <>
-            <Text style={type.h1}>{row.species}</Text>
-            {row.variety && <Text style={type.caption}>{row.variety}</Text>}
+            <View style={{ gap: 6 }}>
+              <Text style={type.h1}>{row.species}</Text>
+              {row.rarity ? (
+                <View
+                  style={{
+                    alignSelf: "flex-start",
+                    backgroundColor: colors.chip,
+                    borderRadius: 999,
+                    paddingHorizontal: 10,
+                    paddingVertical: 4,
+                  }}
+                >
+                  <Text style={{ ...type.label, color: colors.muted }}>{row.rarity}</Text>
+                </View>
+              ) : null}
+            </View>
 
-            <Card>
-              <Eyebrow>Estimated value</Eyebrow>
-              <Text style={type.display}>
-                {row.est_value_cents != null
-                  ? `$${(row.est_value_cents / 100).toLocaleString()}`
-                  : "—"}
+            <View
+              style={{
+                backgroundColor: colors.primaryHover,
+                borderRadius: radius.lg,
+                padding: 20,
+                gap: 6,
+              }}
+            >
+              <Eyebrow onDark>Estimated value</Eyebrow>
+              <Text style={{ fontFamily: "InstrumentSerif_400Regular", fontSize: 36, color: colors.onDark }}>
+                {row.est_value_cents != null ? `$${(row.est_value_cents / 100).toLocaleString()}` : "—"}
               </Text>
-            </Card>
+            </View>
 
             <Card>
               <Row label="Locality" value={row.locality} />
               <Row label="Formation" value={row.formation} />
               <Row label="Matrix" value={row.matrix} />
               <Row label="Provenance" value={row.provenance} />
-              <Row label="Rarity" value={row.rarity} />
               <Row label="Condition" value={row.condition} />
             </Card>
 
+            <Eyebrow>Buy similar</Eyebrow>
+            <Button label="Browse marketplace" variant="ghost" onPress={() => router.push("/(tabs)/market")} />
             <Button label="Add photo" onPress={addPhoto} loading={busy} />
             <Button label="Edit" variant="ghost" onPress={() => setEditing(true)} />
             <Button label="Delete" variant="danger" onPress={remove} />
@@ -205,7 +214,7 @@ export default function SpecimenDetail() {
 
 function Row({ label, value }: { label: string; value: string | null | undefined }) {
   return (
-    <View style={{ gap: 2 }}>
+    <View style={{ gap: 2, paddingVertical: 4, borderBottomWidth: 1, borderBottomColor: colors.divider }}>
       <Text style={type.label}>{label}</Text>
       <Text style={type.body}>{value ?? "—"}</Text>
     </View>

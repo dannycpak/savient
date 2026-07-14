@@ -4,7 +4,8 @@ import { Link, router } from "expo-router";
 import * as AppleAuthentication from "expo-apple-authentication";
 import { supabase } from "@/lib/supabase";
 import { completeGoogleSignIn, signInWithApple, useGoogleAuthRequest } from "@/lib/oauth";
-import { Screen, Button, Field } from "@/components/ui";
+import { Screen, Button, Field, Divider } from "@/components/ui";
+import { COPY } from "@/constants/copy";
 import { space, type, colors } from "@/constants/theme";
 
 export default function Signup() {
@@ -64,34 +65,32 @@ export default function Signup() {
   };
 
   return (
-    <Screen style={{ justifyContent: "center", gap: space.lg }}>
-      <View style={{ gap: space.sm }}>
-        <Text style={type.h1}>Create account</Text>
-        <Text style={type.body}>Start your specimen catalog.</Text>
+    <Screen style={{ justifyContent: "center", gap: space.md }}>
+      <View style={{ gap: 6, marginBottom: space.sm }}>
+        <Text style={{ fontFamily: "InstrumentSerif_400Regular", fontSize: 34, color: colors.ink }}>
+          {COPY.auth.signup}
+        </Text>
+        <Text style={type.caption}>{COPY.auth.signupSub}</Text>
       </View>
-      <Field label="Display name" value={displayName} onChangeText={setDisplayName} autoCapitalize="words" />
-      <Field label="Email" value={email} onChangeText={setEmail} keyboardType="email-address" />
-      <Field label="Password" value={password} onChangeText={setPassword} secureTextEntry />
-      <Button label="Sign up" onPress={submit} loading={busy} />
 
       {Platform.OS === "ios" && (
         <AppleAuthentication.AppleAuthenticationButton
           buttonType={AppleAuthentication.AppleAuthenticationButtonType.SIGN_UP}
           buttonStyle={AppleAuthentication.AppleAuthenticationButtonStyle.BLACK}
-          cornerRadius={8}
-          style={{ width: "100%", height: 48 }}
+          cornerRadius={28}
+          style={{ width: "100%", height: 52 }}
           onPress={onApple}
         />
       )}
-      <Button
-        label="Continue with Google"
-        variant="ghost"
-        onPress={onGoogle}
-        disabled={busy || !googleRequest}
-      />
+      <Button label="Continue with Google" variant="ghost" onPress={onGoogle} disabled={busy || !googleRequest} />
+      <Divider label="or with email" />
 
-      <Link href="/(auth)/login" style={{ color: colors.muted }}>
-        Already have an account? Sign in
+      <Field label="Full name" value={displayName} onChangeText={setDisplayName} autoCapitalize="words" />
+      <Field label="Email" value={email} onChangeText={setEmail} keyboardType="email-address" />
+      <Field label="Password" value={password} onChangeText={setPassword} secureTextEntry />
+      <Button label="Create account" onPress={submit} loading={busy} />
+      <Link href="/(auth)/login" style={{ color: colors.muted, textAlign: "center" }}>
+        Already have an account? Log in
       </Link>
     </Screen>
   );

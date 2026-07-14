@@ -1,48 +1,74 @@
-import { Text, View } from "react-native";
+import { useState } from "react";
+import { Pressable, Text, View } from "react-native";
 import { router } from "expo-router";
 import * as SecureStore from "expo-secure-store";
-import { Screen, Button, Card, Eyebrow } from "@/components/ui";
+import { Screen, Button } from "@/components/ui";
+import { Swatch } from "@/components/Swatch";
 import { COPY } from "@/constants/copy";
-import { space, type } from "@/constants/theme";
-
-const CARDS = [
-  {
-    title: "Catalog with care",
-    body: "Keep species, locality, provenance, and value in one calm cabinet.",
-  },
-  {
-    title: "Visual Check",
-    body: "A second opinion at the moment of purchase uncertainty — never a certificate.",
-  },
-  {
-    title: "Trust before trade",
-    body: "Seller credibility grows from accuracy ratings. Marketplace comes after trust.",
-  },
-];
+import { colors, space, type } from "@/constants/theme";
 
 export default function Onboarding() {
+  const [step, setStep] = useState(0);
+  const card = COPY.onboarding[step];
+  const last = step === COPY.onboarding.length - 1;
+
   const finish = async () => {
     await SecureStore.setItemAsync("sage.onboarding.done", "1");
     router.replace("/(auth)/login");
   };
 
+  const next = () => {
+    if (last) finish();
+    else setStep((s) => s + 1);
+  };
+
   return (
-    <Screen style={{ justifyContent: "space-between" }}>
-      <View style={{ gap: space.lg, marginTop: space.xl }}>
-        <Text style={type.display}>{COPY.appName}</Text>
-        <Text style={type.body}>{COPY.tagline}</Text>
-        {CARDS.map((c) => (
-          <Card key={c.title}>
-            <Eyebrow>Sage</Eyebrow>
-            <Text style={type.h2}>{c.title}</Text>
-            <Text style={type.body}>{c.body}</Text>
-          </Card>
-        ))}
+    <Screen dark style={{ justifyContent: "space-between", paddingTop: space.xl }}>
+      <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
+        <Text style={{ fontFamily: "InstrumentSerif_400Regular", fontSize: 28, color: colors.onDark }}>
+          Sage
+        </Text>
+        <Pressable onPress={finish} hitSlop={12}>
+          <Text style={{ fontFamily: "InstrumentSans_400Regular", fontSize: 15, color: colors.onDarkFaint }}>
+            Skip
+          </Text>
+        </Pressable>
       </View>
-      <View style={{ gap: space.sm }}>
-        <Button label="Get started" onPress={finish} />
-        <Button label="Skip" variant="ghost" onPress={finish} />
+
+      <View style={{ gap: 28, alignItems: "center" }}>
+        <Swatch name={card.swatch} height={180} rounded={40} style={{ width: 180 }} />
+        <View style={{ gap: 12 }}>
+          <Text
+            style={{
+              fontFamily: "InstrumentSerif_400Regular",
+              fontSize: 34,
+              lineHeight: 40,
+              color: colors.onDark,
+              textAlign: "center",
+            }}
+          >
+            {card.title}
+          </Text>
+          <Text style={{ ...type.body, color: colors.onDarkMuted, textAlign: "center" }}>
+            {card.body}
+          </Text>
+        </View>
+        <View style={{ flexDirection: "row", gap: 8 }}>
+          {COPY.onboarding.map((_, i) => (
+            <View
+              key={i}
+              style={{
+                width: i === step ? 18 : 8,
+                height: 8,
+                borderRadius: 4,
+                backgroundColor: i === step ? colors.onDark : "rgba(245,242,235,0.25)",
+              }}
+            />
+          ))}
+        </View>
       </View>
+
+      <Button label={card.cta} variant="bone" onPress={next} />
     </Screen>
   );
 }

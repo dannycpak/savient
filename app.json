@@ -6,11 +6,11 @@
     "scheme": "sage",
     "orientation": "portrait",
     "userInterfaceStyle": "light",
-    "backgroundColor": "#EBE7DD",
+    "backgroundColor": "#F5F2EB",
     "icon": "./assets/images/icon.png",
     "splash": {
       "image": "./assets/images/splash-icon.png",
-      "backgroundColor": "#EBE7DD",
+      "backgroundColor": "#F5F2EB",
       "resizeMode": "contain"
     },
     "ios": {
@@ -40,7 +40,7 @@
       ],
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/android-icon-foreground.png",
-        "backgroundColor": "#EBE7DD"
+        "backgroundColor": "#F5F2EB"
       }
     },
     "plugins": [

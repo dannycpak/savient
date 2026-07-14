@@ -1,9 +1,9 @@
 import { useCallback, useState } from "react";
-import { Alert, ScrollView, Text } from "react-native";
+import { Alert, Pressable, ScrollView, Text } from "react-native";
 import { router, useFocusEffect } from "expo-router";
 import { supabase } from "@/lib/supabase";
-import { Screen, Button, Field } from "@/components/ui";
-import { space, type } from "@/constants/theme";
+import { Screen, Button, Field, Card } from "@/components/ui";
+import { colors, space, type } from "@/constants/theme";
 
 export default function AccountSettings() {
   const [name, setName] = useState("");
@@ -24,7 +24,10 @@ export default function AccountSettings() {
   const save = async () => {
     setBusy(true);
     try {
-      const { error } = await supabase.from("profiles").update({ display_name: name }).eq("id", (await supabase.auth.getUser()).data.user!.id);
+      const { error } = await supabase
+        .from("profiles")
+        .update({ display_name: name })
+        .eq("id", (await supabase.auth.getUser()).data.user!.id);
       if (error) throw error;
       if (email) {
         const { error: e2 } = await supabase.auth.updateUser({ email });
@@ -78,13 +81,46 @@ export default function AccountSettings() {
     <Screen style={{ padding: 0 }}>
       <ScrollView contentContainerStyle={{ padding: space.lg, gap: space.md }}>
         <Text style={type.h1}>Account</Text>
-        <Field label="Full name" value={name} onChangeText={setName} autoCapitalize="words" />
-        <Field label="Email" value={email} onChangeText={setEmail} keyboardType="email-address" />
-        <Button label="Save changes" onPress={save} loading={busy} />
-        <Button label="Change password" variant="ghost" onPress={changePassword} />
-        <Button label="Sign out" variant="ghost" onPress={signOut} />
-        <Button label="Delete account" variant="danger" onPress={deleteAccount} />
+        <Card style={{ gap: space.md }}>
+          <Field label="Full name" value={name} onChangeText={setName} autoCapitalize="words" />
+          <Field label="Email" value={email} onChangeText={setEmail} keyboardType="email-address" />
+          <Button label="Save changes" onPress={save} loading={busy} />
+        </Card>
+        <Card style={{ padding: 0, overflow: "hidden" }}>
+          <Row label="Change password" onPress={changePassword} />
+          <Row label="Sign out" onPress={signOut} />
+          <Row label="Delete account" onPress={deleteAccount} danger last />
+        </Card>
       </ScrollView>
     </Screen>
+  );
+}
+
+function Row({
+  label,
+  onPress,
+  danger,
+  last,
+}: {
+  label: string;
+  onPress: () => void;
+  danger?: boolean;
+  last?: boolean;
+}) {
+  return (
+    <Pressable
+      onPress={onPress}
+      style={{
+        paddingVertical: 16,
+        paddingHorizontal: 18,
+        borderBottomWidth: last ? 0 : 1,
+        borderBottomColor: colors.divider,
+        flexDirection: "row",
+        justifyContent: "space-between",
+      }}
+    >
+      <Text style={[type.body, danger && { color: colors.danger }]}>{label}</Text>
+      <Text style={{ color: colors.faint }}>›</Text>
+    </Pressable>
   );
 }

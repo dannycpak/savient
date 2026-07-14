@@ -88,7 +88,7 @@ export default function NewSpecimen() {
   return (
     <Screen style={{ padding: 0 }}>
       <ScrollView contentContainerStyle={{ padding: space.lg, gap: space.md }}>
-        <Text style={type.h1}>Add specimen</Text>
+        <Text style={type.h1}>Add to your shelf</Text>
         <Field label="Species" value={species} onChangeText={setSpecies} autoCapitalize="words" />
         <Field label="Locality" value={locality} onChangeText={setLocality} autoCapitalize="words" />
         <Field label="Provenance" value={provenance} onChangeText={setProvenance} />

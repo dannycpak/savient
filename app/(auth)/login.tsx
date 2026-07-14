@@ -4,7 +4,7 @@ import { Link, router } from "expo-router";
 import * as AppleAuthentication from "expo-apple-authentication";
 import { supabase } from "@/lib/supabase";
 import { completeGoogleSignIn, signInWithApple, useGoogleAuthRequest } from "@/lib/oauth";
-import { Screen, Button, Field } from "@/components/ui";
+import { Screen, Button, Field, Divider } from "@/components/ui";
 import { COPY } from "@/constants/copy";
 import { space, type, colors } from "@/constants/theme";
 
@@ -57,36 +57,34 @@ export default function Login() {
   };
 
   return (
-    <Screen style={{ justifyContent: "center", gap: space.lg }}>
-      <View style={{ gap: space.sm }}>
-        <Text style={type.display}>{COPY.appName}</Text>
-        <Text style={type.body}>Sign in to your cabinet.</Text>
+    <Screen style={{ justifyContent: "center", gap: space.md }}>
+      <View style={{ gap: 6, marginBottom: space.sm }}>
+        <Text style={{ fontFamily: "InstrumentSerif_400Regular", fontSize: 34, color: colors.ink }}>
+          {COPY.auth.welcome}
+        </Text>
+        <Text style={type.caption}>{COPY.auth.welcomeSub}</Text>
       </View>
-      <Field label="Email" value={email} onChangeText={setEmail} keyboardType="email-address" autoComplete="email" />
-      <Field label="Password" value={password} onChangeText={setPassword} secureTextEntry autoComplete="password" />
-      <Button label="Sign in" onPress={submit} loading={busy} />
 
       {Platform.OS === "ios" && (
         <AppleAuthentication.AppleAuthenticationButton
           buttonType={AppleAuthentication.AppleAuthenticationButtonType.SIGN_IN}
           buttonStyle={AppleAuthentication.AppleAuthenticationButtonStyle.BLACK}
-          cornerRadius={8}
-          style={{ width: "100%", height: 48 }}
+          cornerRadius={28}
+          style={{ width: "100%", height: 52 }}
           onPress={onApple}
         />
       )}
-      <Button
-        label="Continue with Google"
-        variant="ghost"
-        onPress={onGoogle}
-        disabled={busy || !googleRequest}
-      />
+      <Button label="Continue with Google" variant="ghost" onPress={onGoogle} disabled={busy || !googleRequest} />
+      <Divider label="or with email" />
 
-      <Link href="/(auth)/forgot-password" style={{ color: colors.primary, fontFamily: "InstrumentSans_500Medium" }}>
+      <Field label="Email" value={email} onChangeText={setEmail} keyboardType="email-address" autoComplete="email" />
+      <Field label="Password" value={password} onChangeText={setPassword} secureTextEntry autoComplete="password" />
+      <Link href="/(auth)/forgot-password" style={{ color: colors.primary, fontFamily: "InstrumentSans_500Medium", fontSize: 13.5 }}>
         Forgot password?
       </Link>
-      <Link href="/(auth)/signup" style={{ color: colors.muted, fontFamily: "InstrumentSans_400Regular" }}>
-        Need an account? Sign up
+      <Button label="Log in" onPress={submit} loading={busy} />
+      <Link href="/(auth)/signup" style={{ color: colors.muted, fontFamily: "InstrumentSans_400Regular", textAlign: "center" }}>
+        New to Sage? Create account
       </Link>
     </Screen>
   );

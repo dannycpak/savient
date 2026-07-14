@@ -46,6 +46,15 @@ Standard commands live in `package.json` scripts; run them with `npm run <script
 ### Store submission
 
 - Marketplace Buy / Checkout are gated as “Coming soon” for the first submission. Do not un-gate
-  until Phase 4 (Connect + PaymentSheet) is complete.
+  until Phase 4 (Connect + PaymentSheet) is complete. Market can show demo listing cards for visual
+  parity with the approved offline prototype when live listings are empty.
 - Follow `docs/STORE_SUBMISSION.md`. Placeholders `REPLACE_WITH_*` in `app.json` / `eas.json` must
   be filled before `eas build` / `eas submit`.
+
+### UI / design system
+
+- Tokens live in `constants/theme.ts` (canvas `#F5F2EB`, pill radius, on-dark palette). Shared
+  primitives in `components/ui.tsx`; mineral gradients in `components/Swatch.tsx`.
+- Tab bar: Home / Collection / elevated Check FAB / Market / Profile (`app/(tabs)/_layout.tsx`).
+- Visual reference: the approved offline Sage prototype HTML (Instrument Serif/Sans, dark Check +
+  Paywall, swatch heroes).
