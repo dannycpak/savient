@@ -1,9 +1,9 @@
 import { useState } from "react";
-import { Alert, Pressable, Text, View } from "react-native";
+import { Alert, Text, View } from "react-native";
 import { useLocalSearchParams, router } from "expo-router";
 import { supabase } from "@/lib/supabase";
-import { Screen, Card, Button, Eyebrow } from "@/components/ui";
-import { colors, space, type } from "@/constants/theme";
+import { Screen, Card, Button, Eyebrow, ChipButton } from "@/components/ui";
+import { space, type } from "@/constants/theme";
 
 const ACCURACY = [
   { id: "as_described", label: "As described" },
@@ -52,23 +52,23 @@ export default function RatePurchase() {
       <Text style={type.h1}>Rate purchase</Text>
       <Card>
         <Eyebrow>Material accuracy</Eyebrow>
-        {ACCURACY.map((o) => (
-          <Pressable key={o.id} onPress={() => setAccuracy(o.id)}>
-            <Text style={[type.body, { color: accuracy === o.id ? colors.primary : colors.ink }]}>
-              {accuracy === o.id ? "● " : "○ "}
-              {o.label}
-            </Text>
-          </Pressable>
-        ))}
+        <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
+          {ACCURACY.map((o) => (
+            <ChipButton
+              key={o.id}
+              label={o.label}
+              selected={accuracy === o.id}
+              onPress={() => setAccuracy(o.id)}
+            />
+          ))}
+        </View>
       </Card>
       <Card>
         <Eyebrow>Photos matched the piece</Eyebrow>
-        <Pressable onPress={() => setPhotoMatch(true)}>
-          <Text style={type.body}>{photoMatch ? "● " : "○ "}Yes, matched</Text>
-        </Pressable>
-        <Pressable onPress={() => setPhotoMatch(false)}>
-          <Text style={type.body}>{!photoMatch ? "● " : "○ "}Not quite</Text>
-        </Pressable>
+        <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
+          <ChipButton label="Yes, matched" selected={photoMatch} onPress={() => setPhotoMatch(true)} />
+          <ChipButton label="Not quite" selected={!photoMatch} onPress={() => setPhotoMatch(false)} />
+        </View>
       </Card>
       <Button label="Submit rating" onPress={submit} loading={busy} />
     </Screen>

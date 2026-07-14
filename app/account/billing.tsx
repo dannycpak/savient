@@ -1,10 +1,9 @@
 import { useCallback, useState } from "react";
-import { Linking, Text } from "react-native";
+import { Linking, Platform, Text, View } from "react-native";
 import { router, useFocusEffect } from "expo-router";
-import { Platform } from "react-native";
 import { supabase } from "@/lib/supabase";
 import { Screen, Card, Button, Eyebrow } from "@/components/ui";
-import { space, type } from "@/constants/theme";
+import { colors, radius, space, type } from "@/constants/theme";
 
 export default function Billing() {
   const [plan, setPlan] = useState<"free" | "plus">("free");
@@ -32,10 +31,26 @@ export default function Billing() {
   return (
     <Screen style={{ gap: space.md }}>
       <Text style={type.h1}>Billing</Text>
+      <View
+        style={{
+          backgroundColor: colors.primaryHover,
+          borderRadius: radius.lg,
+          padding: 20,
+          gap: 8,
+        }}
+      >
+        <Eyebrow onDark>Plan</Eyebrow>
+        <Text style={{ fontFamily: "InstrumentSerif_400Regular", fontSize: 28, color: colors.onDark }}>
+          {plan === "plus" ? "Sage+" : "Free"}
+        </Text>
+        <Text style={{ color: colors.onDarkMuted, fontSize: 13.5 }}>
+          {credits} Visual Check credits available
+        </Text>
+      </View>
       <Card>
-        <Eyebrow>Plan</Eyebrow>
-        <Text style={type.h2}>{plan === "plus" ? "Sage+" : "Free"}</Text>
-        <Text style={type.caption}>{credits} Visual Check credits</Text>
+        <Eyebrow>Payment method</Eyebrow>
+        <Text style={type.body}>Managed by Apple / Google via RevenueCat</Text>
+        <Text style={type.caption}>Sage never stores card numbers for digital goods.</Text>
       </Card>
       <Button label="Get Sage+ / credits" onPress={() => router.push("/paywall")} />
       <Button label="Manage subscription" variant="ghost" onPress={manage} />

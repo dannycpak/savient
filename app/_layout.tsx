@@ -34,7 +34,7 @@ export default function RootLayout() {
         <Stack.Screen name="onboarding" options={{ headerShown: false }} />
         <Stack.Screen name="(auth)" options={{ headerShown: false }} />
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="paywall" options={{ presentation: "modal", title: "Sage+" }} />
+        <Stack.Screen name="paywall" options={{ presentation: "fullScreenModal", headerShown: false }} />
         <Stack.Screen name="specimen/[id]" options={{ title: "Specimen" }} />
         <Stack.Screen name="specimen/new" options={{ title: "Add specimen" }} />
         <Stack.Screen name="listing/[id]" options={{ title: "Listing" }} />
