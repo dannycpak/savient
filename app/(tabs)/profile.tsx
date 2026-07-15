@@ -105,17 +105,21 @@ export default function Profile() {
         </View>
 
         <Card style={{ padding: 0, overflow: "hidden" }}>
-          {[
-            { label: "Account settings", href: "/account/settings" },
-            { label: "Billing & payments", href: "/account/billing" },
-          ].map((row, i) => (
+          {(
+            [
+              { label: "Account settings", href: "/account/settings" as const },
+              { label: "Billing & payments", href: "/account/billing" as const },
+              { label: "Privacy Policy", href: "/legal/privacy" as const },
+              { label: "Terms of Use", href: "/legal/terms" as const },
+            ] as const
+          ).map((row, i, arr) => (
             <Pressable
               key={row.label}
-              onPress={() => router.push(row.href as "/account/settings")}
+              onPress={() => router.push(row.href)}
               style={{
                 paddingVertical: 16,
                 paddingHorizontal: 18,
-                borderBottomWidth: i === 0 ? 1 : 0,
+                borderBottomWidth: i === arr.length - 1 ? 0 : 1,
                 borderBottomColor: colors.divider,
                 flexDirection: "row",
                 justifyContent: "space-between",

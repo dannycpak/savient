@@ -43,6 +43,8 @@ export default function RootLayout() {
         <Stack.Screen name="rate/[orderId]" options={{ title: "Rate purchase" }} />
         <Stack.Screen name="account/settings" options={{ title: "Account" }} />
         <Stack.Screen name="account/billing" options={{ title: "Billing" }} />
+        <Stack.Screen name="legal/privacy" options={{ title: "Privacy Policy" }} />
+        <Stack.Screen name="legal/terms" options={{ title: "Terms of Use" }} />
       </Stack>
     </AuthProvider>
   );

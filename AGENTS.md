@@ -24,25 +24,24 @@ Standard commands live in `package.json` scripts; run them with `npm run <script
 ### Running the app (GUI testing in the cloud VM)
 
 - There are **no iOS/Android simulators** in the cloud VM, so the only browser-testable surface is
-  Expo web: `npx expo start --web` (Metro serves on `http://localhost:8081`). Trigger a real bundle
-  compile by requesting the page; first bundle takes ~5-15s.
-- **Web gotcha (important):** `expo-secure-store` is **native-only and throws on web**. It is used
-  for Supabase session storage in `lib/supabase.ts` and also in `app/index.tsx` and
-  `app/onboarding.tsx`. As written the app **crashes on web** at boot
-  (`ExpoSecureStore.default.getValueWithKeyAsync is not a function`). To render/test in a browser you
-  must temporarily shim SecureStore with a `localStorage`-backed adapter when `Platform.OS === "web"`.
-  Treat this as a throwaway testing aid — do not commit it (the app targets native, not web).
+  Expo web: `npx expo start --web` (Metro serves on `http://localhost:8081`, not 8083). Trigger a
+  real bundle compile by requesting the page; first bundle takes ~5-15s.
+- **Web storage:** use `lib/storage.ts` (SecureStore on native, `localStorage` on web). Do not call
+  `expo-secure-store` directly — it has no web implementation.
 - **Native target:** IAP + Sign in with Apple need a **dev client** (`npx expo run:ios` /
-  `npx expo run:android`), not Expo Go.
+  `npx expo run:android`), not Expo Go. This Linux VM cannot prove native catalog E2E.
 
 ### Supabase backend
 
-- Apply migrations `0001` + `0002` (storage buckets/policies). Edge Functions require the Supabase
-  CLI plus either a linked cloud project or a local Docker stack; neither is installed by default.
-- `scripts/setup.sh` is **interactive** (prompts for Anthropic/Stripe/RevenueCat/CRON secrets and
-  `supabase link`) — it cannot run unattended. Secret-bearing values belong only in Edge Function
-  env, never in the Expo app.
-- Schedule `purge-deleted-accounts` daily with `CRON_SECRET` (App Store 30-day account deletion).
+- Soft-launch runbook: `docs/SOFT_LAUNCH.md`.
+- Local: `supabase start` then `supabase functions serve --env-file supabase/.env.local --no-verify-jwt`.
+  Verify with `scripts/verify-local-backend.sh`.
+- Cloud project `sage`: verify with `scripts/verify-cloud-backend.sh`
+  (needs `SUPABASE_ACCESS_TOKEN`, `SUPABASE_PROJECT_REF`, keys under `~/.config/sage/`).
+  Deploy: `./scripts/deploy-cloud.sh` after `supabase link`.
+- Live RPC arg names are `p_user` (not `p_user_id`) — keep Edge Functions aligned.
+- `scripts/setup.sh` is interactive. Schedule `purge-deleted-accounts` daily with `CRON_SECRET`.
+- In-app legal: `/legal/privacy`, `/legal/terms`. Counsel checklist: `docs/LEGAL.md`.
 
 ### Store submission
 

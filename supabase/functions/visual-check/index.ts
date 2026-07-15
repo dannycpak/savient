@@ -53,8 +53,9 @@ Deno.serve(async (req) => {
       return json({ error: "Invalid path" }, 403);
     }
 
+    // Remote RPCs use arg name `p_user` (live sage project).
     const { data: allowed } = await admin.rpc("rate_limit_visual_check", {
-      p_user_id: userId,
+      p_user: userId,
     });
     if (allowed === false) {
       return json({ error: "Too many checks. Try again in a few minutes." }, 429);
@@ -62,7 +63,7 @@ Deno.serve(async (req) => {
 
     // Quota gate (refunded below if AI fails)
     const { data: consumedVal, error: consumeErr } = await admin.rpc("consume_check", {
-      p_user_id: userId,
+      p_user: userId,
     });
     if (consumeErr) {
       if (consumeErr.message?.includes("NO_CHECKS")) {
@@ -79,7 +80,7 @@ Deno.serve(async (req) => {
       .from("check-uploads")
       .createSignedUrl(image_path, 120);
     if (signErr || !signed?.signedUrl) {
-      await admin.rpc("refund_check", { p_user_id: userId, p_consumed: consumed });
+      await admin.rpc("refund_check", { p_user: userId, p_consumed: consumed });
       return json({ error: "Image not found" }, 404);
     }
 
@@ -95,13 +96,13 @@ Deno.serve(async (req) => {
       .select("id")
       .single();
     if (insertErr) {
-      await admin.rpc("refund_check", { p_user_id: userId, p_consumed: consumed });
+      await admin.rpc("refund_check", { p_user: userId, p_consumed: consumed });
       return json({ error: insertErr.message }, 500);
     }
 
     const anthropicKey = Deno.env.get("ANTHROPIC_API_KEY");
     if (!anthropicKey) {
-      await admin.rpc("refund_check", { p_user_id: userId, p_consumed: consumed });
+      await admin.rpc("refund_check", { p_user: userId, p_consumed: consumed });
       await admin
         .from("visual_checks")
         .update({ status: "failed", completed_at: new Date().toISOString() })
@@ -112,7 +113,7 @@ Deno.serve(async (req) => {
     const imgRes = await fetch(signed.signedUrl);
     const buf = new Uint8Array(await imgRes.arrayBuffer());
     if (buf.byteLength === 0 || buf.byteLength > MAX_BYTES) {
-      await admin.rpc("refund_check", { p_user_id: userId, p_consumed: consumed });
+      await admin.rpc("refund_check", { p_user: userId, p_consumed: consumed });
       await admin
         .from("visual_checks")
         .update({ status: "failed", completed_at: new Date().toISOString() })
@@ -162,7 +163,7 @@ Deno.serve(async (req) => {
     });
 
     if (!aiRes.ok) {
-      await admin.rpc("refund_check", { p_user_id: userId, p_consumed: consumed });
+      await admin.rpc("refund_check", { p_user: userId, p_consumed: consumed });
       await admin
         .from("visual_checks")
         .update({ status: "failed", completed_at: new Date().toISOString() })
@@ -200,7 +201,7 @@ Deno.serve(async (req) => {
   } catch (e) {
     if (admin && userId && consumed) {
       try {
-        await admin.rpc("refund_check", { p_user_id: userId, p_consumed: consumed });
+        await admin.rpc("refund_check", { p_user: userId, p_consumed: consumed });
       } catch {
         /* best-effort */
       }

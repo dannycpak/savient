@@ -3,8 +3,9 @@ export const FREE_TIER = {
   catalogCap: 25,
 } as const;
 
+/** Shown on every Visual Check result. Counsel must sign off before public launch (docs/LEGAL.md). */
 export const VISUAL_CHECK_DISCLAIMER =
-  "Visual Check is a second opinion based on a photo — not a certified authentication, appraisal, or guarantee of identity, treatment status, or value.";
+  "Visual Check is a second opinion based on a photo — not a certified authentication, appraisal, laboratory analysis, or guarantee of identity, treatment status, locality, or value. Do not rely on it as the sole basis for a purchase.";
 
 export const COPY = {
   appName: "Sage",

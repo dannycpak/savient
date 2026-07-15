@@ -6,4 +6,27 @@ enabled = true
 [db]
 major_version = 15
 
+[auth]
+enabled = true
+site_url = "sage://"
+additional_redirect_urls = ["sage://reset-password", "sage://**", "http://127.0.0.1:8081/**", "exp://**"]
+enable_signup = true
+enable_anonymous_sign_ins = false
+
+[auth.email]
+enable_signup = true
+enable_confirmations = false
+
+[auth.external.apple]
+enabled = false
+# Set client_id + secret in a linked cloud project for production Sign in with Apple.
+
+[auth.external.google]
+enabled = false
+# Set client_id + secret (+ EXPO_PUBLIC_GOOGLE_* in app .env) for production Google sign-in.
+
+[storage]
+enabled = true
+file_size_limit = "10MiB"
+
 [functions]
