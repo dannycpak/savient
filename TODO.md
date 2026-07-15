@@ -9,7 +9,8 @@ Legend: `[x]` = implemented in repo · `[ ]` = still needs ops / store-console /
 - [x] Run `scripts/setup.sh` (deps, supabase init, functions scaffolds, secrets prompts).
 - [x] Apply `supabase/migrations/0001_initial_schema.sql` (+ `0002_store_readiness.sql` for storage).
 - [x] Create Supabase Storage buckets: `specimen-photos` (private), `check-uploads` (private) — via migration 0002.
-- [ ] Fill `.env` from `.env.example`; confirm app boots in Expo Go / **dev client** (IAP + Apple need native).
+- [x] Local `.env` + `supabase start` path documented (`docs/SOFT_LAUNCH.md`); **cloud** Expo Go / **dev client** still needs real project keys.
+- [x] Migration `0003_service_role_grants.sql` so Edge Functions (purge) can access tables.
 
 ## Phase 1 — Auth + Catalog (core value, zero billing)
 - [x] Supabase Auth: email/password sign-up, login, password reset → `sage://reset-password`.
@@ -20,15 +21,16 @@ Legend: `[x]` = implemented in repo · `[ ]` = still needs ops / store-console /
 - [x] Free-tier catalog cap (25 specimens) enforced server-side (RLS + count check) with upgrade prompt in UI.
 - [x] Account settings: update name/email (re-verify), change password, delete account
       (soft-delete + 30-day purge via `purge-deleted-accounts`), sign out (token revocation).
-- [ ] Enable Apple + Google providers in the live Supabase project; schedule purge cron.
+- [x] Local verify: email signup/login, reset mail (Mailpit), catalog CRUD, soft-delete + purge (`scripts/verify-local-backend.sh`).
+- [ ] Enable Apple + Google providers on the **cloud** Supabase project; schedule purge cron in production.
 
 ## Phase 2 — Visual Check (AI, quota-gated; no payments yet)
 - [x] `visual-check` Edge Function: image → Anthropic vision prompt → structured `result_json`.
 - [x] Quota logic: free = 3 checks/month; consume monthly allowance first, then credits (refund on AI failure).
 - [x] Rate-limit the endpoint; log every check to `visual_checks`.
 - [x] Result screen: "Most likely / Watch out for / price range" + mandatory second-opinion disclaimer + "Save to catalog".
-- [ ] Legal review pass on disclaimer copy before public rollout.
-- [ ] Deploy function + set `ANTHROPIC_API_KEY` on the project.
+- [x] Legal draft + strengthened disclaimer copy (`docs/LEGAL.md`, `constants/copy.ts`) — **counsel sign-off still required**.
+- [ ] Deploy function + set `ANTHROPIC_API_KEY` on the project; run photo→result→save E2E.
 
 ## Phase 3 — Monetization (RevenueCat / IAP)
 - [ ] App Store Connect + Play Console: create app records, `plus` subscription product
@@ -59,3 +61,5 @@ Legend: `[x]` = implemented in repo · `[ ]` = still needs ops / store-console /
 - [ ] Reconciliation job: unbilled/failed webhook events; credit balance audit.
 - [ ] App review prep: demo account, IAP review notes (template in `docs/STORE_SUBMISSION.md`), screenshots.
 - [ ] Replace `REPLACE_WITH_*` placeholders in `app.json` / `eas.json`; run EAS Submit.
+- [x] In-app Privacy Policy + Terms (`/legal/privacy`, `/legal/terms`) + Profile links; drafts in `docs/PRIVACY.md` / `docs/TERMS.md`.
+- [ ] Host public web copies (optional) and replace placeholder company emails before public launch.
