@@ -22,7 +22,8 @@ Legend: `[x]` = implemented in repo · `[ ]` = still needs ops / store-console /
 - [x] Account settings: update name/email (re-verify), change password, delete account
       (soft-delete + 30-day purge via `purge-deleted-accounts`), sign out (token revocation).
 - [x] Local verify: email signup/login, reset mail (Mailpit), catalog CRUD, soft-delete + purge (`scripts/verify-local-backend.sh`).
-- [ ] Enable Apple + Google providers on the **cloud** Supabase project; schedule purge cron in production.
+- [x] Cloud project linked: schema gaps + purge deployed; auth/catalog/purge verified (`scripts/verify-cloud-backend.sh`).
+- [ ] Enable Apple + Google providers on the **cloud** Supabase project; schedule purge cron in production (needs stored `CRON_SECRET`).
 
 ## Phase 2 — Visual Check (AI, quota-gated; no payments yet)
 - [x] `visual-check` Edge Function: image → Anthropic vision prompt → structured `result_json`.
@@ -30,7 +31,8 @@ Legend: `[x]` = implemented in repo · `[ ]` = still needs ops / store-console /
 - [x] Rate-limit the endpoint; log every check to `visual_checks`.
 - [x] Result screen: "Most likely / Watch out for / price range" + mandatory second-opinion disclaimer + "Save to catalog".
 - [x] Legal draft + strengthened disclaimer copy (`docs/LEGAL.md`, `constants/copy.ts`) — **counsel sign-off still required**.
-- [ ] Deploy function + set `ANTHROPIC_API_KEY` on the project; run photo→result→save E2E.
+- [x] Deploy `visual-check` + `purge-deleted-accounts` to cloud (RPC args aligned to `p_user`).
+- [ ] Set real `ANTHROPIC_API_KEY` on the project; run photo→result→save E2E.
 
 ## Phase 3 — Monetization (RevenueCat / IAP)
 - [ ] App Store Connect + Play Console: create app records, `plus` subscription product
